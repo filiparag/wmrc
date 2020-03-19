@@ -1,0 +1,185 @@
+#! /usr/bin/dash
+
+export DIR
+export WMRC
+export MODULES
+
+DIR="$(dirname "$(readlink -f "$0")")"
+WMRC="$DIR/$(basename "$0")"
+MODULES="$DIR/modules"
+RC="$DIR/rc.conf"
+HOST="$(hostname)"
+HANDLERS="$DIR/handlers"
+
+error() {
+
+  >&2 echo "$1"
+
+  [ -z "$3" ] && EXIT_CODE=1 || EXIT_CODE=2
+  [ "$2" = "fatal" ] && exit "$EXIT_CODE"
+
+}
+
+handlers() {
+
+  HND="$(find "$HANDLERS" -type f -executable)"
+  
+  for H in $HND; do
+    nohup "$H" >/dev/null 2>&1
+  done
+
+}
+
+section() {
+
+  [ -f "$RC" ] || error "Configuration file not found!" fatal 3
+
+  L="a-zA-Z" # Letters
+  N="0-9" # Numbers
+  S="_-" # Special characters
+  W="\*" # Wildcard
+  D="([$L$N$S]+\/)" # Module directory
+  F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
+  P="(\([$L$N$S]+(,[$L$N$S]+)*\))?" # Module parameters
+  M="($F$P)" # Module file with parameters
+  A="(before|after|replace)" # Section header arguments
+  S="(\[$1(@$HOST)?(:$A)?\])" # Section header
+  E="$D($M(,($M|$W))*|$W)" # Section entry
+  
+  RG="(($S)(\n$E)+\n?)"
+  MATCH="$(sed "s/ //g; s/#.*//g; /^$/d" "$RC" | grep -Pzo "$RG")"
+
+  MOD=""
+  MODR=""
+  ARG=""
+  for M in $MATCH; do
+
+    echo "$M" | grep -Pzq "$S" && \
+      ARG="$(echo "$M" | grep -Po "$A")" \
+      && continue
+    [ -z "$ARG" ] && ARG="after" && continue
+
+    case "$ARG" in
+      before)
+        MOD="$M\n$MOD";;
+      after)
+        MOD="$MOD\n$M";;
+      replace)
+        MODR="$MODR\n$M";;
+    esac
+
+  done
+
+  [ -z "$MODR" ] || MOD="$MODR"
+  SECTION="$(echo "$MOD" | sed "/^$/d")"
+
+  [ -z "$SECTION" ] && return 1 || return 0
+
+}
+
+modules() {
+
+  L="a-zA-Z" # Letters
+  N="0-9" # Numbers
+  S="_-" # Special characters
+  W="\*" # Wildcard
+  D="([$L$N$S]+)\/" # Module directory
+  F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
+  P="(\([$L$N$S]+(,[$L$N$S]+)*\))?" # Module parameters
+  M="($F$P)" # Module file with parameters
+  E="($M(,$M)*(,$W)?|$W)" # Section entry
+
+  EXECUTE=""
+  for ME in $1; do
+
+    MDIR="$(echo "$ME" | sed "s/\/.*//g")"
+    [ -d "$MODULES/$MDIR" ] || \
+      error "Module directory '$MDIR' doesn't exist!" || \
+      continue
+
+    ALL="$(find "$MODULES/$MDIR" -maxdepth 1 -type f -executable -printf "%P,")"
+    MODS="$(echo "$ME" | sed "s/.*\///g; s/\*/$ALL/; s/\*//g" | grep -Po "($F$P)|$W")"
+
+    for M in $MODS; do
+      EXE="$(echo "$M" | sed "s/(.*//g")"
+      PRM="$(echo "$M" | sed "s/^$EXE//g; s/(//g; s/)//g; s/,/ /g")"
+      [ -f "$MODULES/$MDIR/$EXE" ] || \
+        error "Module '$MDIR/$EXE' doesn't exist!" || \
+        continue
+      RUN="$MDIR/$EXE $PRM"
+      echo "$EXECUTE" | grep -q "$RUN;" ||
+        EXECUTE="$EXECUTE $RUN;" &&
+        execute "$MDIR/$EXE" "$PRM"
+    done
+
+  done
+
+}
+
+execute() {
+
+  [ -x "$MODULES/$1" ] || \
+    error "Module '$1' is not executable by this user!" || \
+    return
+
+  DEPS="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$1" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
+  for D in $DEPS; do
+    [ -n "$(command -v "$D")" ] || \
+      error "Module '$1' has a missing dependency: '$D'!"
+  done
+
+  FLAG_ASYNC_LOCK=""
+
+  FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$MODULES/$1" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
+  for F in $FLAGS; do
+    case "$F" in
+      async_lock)
+        FLAG_ASYNC_LOCK="true";;
+    esac
+  done
+
+  [ -z "$FLAG_ASYNC_LOCK" ] && \
+    nohup "$MODULES/$1" $2 >/dev/null 2>&1 || \
+    "$MODULES/$1" $2 || \
+      error "Error occurred while running module '$1($2)'!"
+
+}
+
+dependencies() {
+
+  MODS="$(find "$MODULES" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
+  DEPS=""
+  
+  for M in $MODS; do
+    D="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$M" | sed "s/\# *WMRC_DEPS\: *//; s/,/\n/g; s/ //g")"
+    DEPS="$DEPS\n$D"
+  done
+
+  DEPS="$(echo "$DEPS" | awk 'NF && !seen[$0]++')"
+
+  for D in $DEPS; do
+    [ "$1" = "missing" ] && [ -n "$(command -v "$D")" ] || \
+      echo "$D"
+  done
+
+}
+
+main() {
+
+  [ -z "$DISPLAY" ] && error "Environment variable 'DISPLAY' is not set!" fatal 1
+  [ -z "$1" ] && handlers && exit
+
+  case "$1" in
+    "-d"|"--dependencies")
+      dependencies;;
+    "-m"|"--missing-dependencies")
+      dependencies missing;;
+    *)
+      section "$1" || \
+        error "Section '$1' not found or empty" fatal 2;
+      modules "$SECTION";;
+  esac
+
+}
+
+main "$@"
