@@ -1,0 +1,27 @@
+restart() {
+  stop
+  start
+}
+
+error() {
+  >&2 echo "$1"
+  [ -z "$3" ] && EXIT_CODE=1 || EXIT_CODE=2
+  [ "$2" = "fatal" ] && exit "$EXIT_CODE"
+}
+
+[ -z DIR ] && error "Environment variable 'DIR' is not set!" fatal 1
+[ -z WMRC ] && error "Environment variable 'WMRC' is not set!" fatal 1
+[ -z MODULES ] && error "Environment variable 'MODULES' is not set!" fatal 1
+
+case "$1" in
+  start)
+    start;;
+  stop)
+    stop;;
+  restart)
+    restart;;
+  "")
+    start;;
+  *)
+    error "Action '$1' is not defined!" fatal 1;;
+esac

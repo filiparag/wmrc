@@ -109,7 +109,7 @@ modules() {
       RUN="$MDIR/$EXE $PRM"
       echo "$EXECUTE" | grep -q "$RUN;" ||
         EXECUTE="$EXECUTE $RUN;" &&
-        execute "$MDIR/$EXE" "$PRM"
+        execute "$MDIR" "$EXE" "$PRM"
     done
 
   done
@@ -118,19 +118,19 @@ modules() {
 
 execute() {
 
-  [ -x "$MODULES/$1" ] || \
-    error "Module '$1' is not executable by this user!" || \
+  [ -x "$MODULES/$1/$2" ] || \
+    error "Module '$1/$2' is not executable by this user!" || \
     return
 
-  DEPS="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$1" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
+  DEPS="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$1/$2" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
   for D in $DEPS; do
     [ -n "$(command -v "$D")" ] || \
-      error "Module '$1' has a missing dependency: '$D'!"
+      error "Module '$1/$2' has a missing dependency: '$D'!"
   done
 
   FLAG_ASYNC_LOCK=""
 
-  FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$MODULES/$1" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
+  FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$MODULES/$1/$2" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
   for F in $FLAGS; do
     case "$F" in
       async_lock)
@@ -139,9 +139,9 @@ execute() {
   done
 
   [ -z "$FLAG_ASYNC_LOCK" ] && \
-    nohup "$MODULES/$1" $2 >/dev/null 2>&1 || \
-    "$MODULES/$1" $2 || \
-      error "Error occurred while running module '$1($2)'!"
+    nohup DIR="$MODULES/$1" "$MODULES/$1/$2" $3 >/dev/null 2>&1 || \
+    DIR="$MODULES/$1" "$MODULES/$1/$2" $3 >/dev/null || \
+      error "Error occurred while running module '$1/$2($3)'!"
 
 }
 
