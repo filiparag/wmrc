@@ -18,10 +18,10 @@ error() {
 [ -z "$MODULES" ] && error "Environment variable 'MODULES' is not set!" fatal 1
 
 EXEC="$1"
-[ -z "$EXEC" ] && EXEC="start"
+[ -z "$EXEC" ] || ! type "$EXEC" && EXEC="start"
 
 if type "$EXEC"; then
-  "$EXEC"
+  "$EXEC" "$@"
 else
   error "Action '$EXEC' is not defined!" fatal 1
 fi

@@ -38,16 +38,18 @@ section() {
   N="0-9" # Numbers
   S="_-" # Special characters
   W="\*" # Wildcard
+  Q="\&nbsp" # Quote word separator
   D="([$L$N$S]+\/)" # Module directory
   F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
-  P="(\([$L$N$S]+(,[$L$N$S]+)*\))?" # Module parameters
+  P="(\([$Q$L$N$S]+(,[$Q$L$N$S]+)*\))?" # Module parameters
   M="($F$P)" # Module file with parameters
   A="(before|after|replace)" # Section header arguments
   S="(\[$1(@$HOST)?(:$A)?\])" # Section header
   E="$D($M(,($M|$W))*|$W)" # Section entry
   
   RG="(($S)(\n$E)+\n?)"
-  MATCH="$(sed "s/ //g; s/#.*//g; /^$/d" "$RC" | grep -Pzo "$RG")"
+  MATCH="$(awk '!(NR%2){gsub(FS,"\\&nbsp")}1' ORS="" RS="'" "$RC" | \
+         sed "s/ //g; s/#.*//g; /^$/d;" | grep -Pzo "$RG")"
 
   MOD=""
   MODR=""
@@ -102,9 +104,10 @@ modules() {
   N="0-9" # Numbers
   S="_-" # Special characters
   W="\*" # Wildcard
+  Q="\&nbsp" # Quote word separator
   D="([$L$N$S]+)\/" # Module directory
   F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
-  P="(\([$L$N$S]+(,[$L$N$S]+)*\))?" # Module parameters
+  P="(\([$Q$L$N$S]+(,[$Q$L$N$S]+)*\))?" # Module parameters
   M="($F$P)" # Module file with parameters
   E="($M(,$M)*(,$W)?|$W)" # Section entry
 
@@ -157,10 +160,15 @@ execute() {
     esac
   done
 
-  [ -z "$FLAG_ASYNC_LOCK" ] && \
-    nohup DIR="$MODULES/$1" env $ENVVARS "$MODULES/$1/$2" $3 >/dev/null 2>&1 || \
-    DIR="$MODULES/$1" env $ENVVARS "$MODULES/$1/$2" $3 >/dev/null || \
-      error "Error occurred while running module '$1/$2($3)'!"
+  PRM="\"$(echo "$3" | sed "s/ /\" \"/g; s/\&nbsp/ /g")\""
+  CMD="DIR=$MODULES/$1 env $ENVVARS $MODULES/$1/$2 $PRM >/dev/null"
+
+  if [ -z "$FLAG_ASYNC_LOCK" ]; then
+    nohup eval "$CMD" 2>&1
+  else
+    eval "$CMD" || \
+      error "Error occurred while running module '$1/$2($PRM)'!"
+  fi
 
 }
 
