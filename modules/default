@@ -1,4 +1,8 @@
+#! /usr/bin/env dash
+
 restart() {
+  type start && type stop || \
+    error "This module can not be restarted!" fatal 1
   stop
   start
 }
@@ -9,19 +13,15 @@ error() {
   [ "$2" = "fatal" ] && exit "$EXIT_CODE"
 }
 
-[ -z DIR ] && error "Environment variable 'DIR' is not set!" fatal 1
-[ -z WMRC ] && error "Environment variable 'WMRC' is not set!" fatal 1
-[ -z MODULES ] && error "Environment variable 'MODULES' is not set!" fatal 1
+[ -z "$DIR" ] && error "Environment variable 'DIR' is not set!" fatal 1
+[ -z "$WMRC" ] && error "Environment variable 'WMRC' is not set!" fatal 1
+[ -z "$MODULES" ] && error "Environment variable 'MODULES' is not set!" fatal 1
 
-case "$1" in
-  start)
-    start;;
-  stop)
-    stop;;
-  restart)
-    restart;;
-  "")
-    start;;
-  *)
-    error "Action '$1' is not defined!" fatal 1;;
-esac
+EXEC="$1"
+[ -z "$EXEC" ] && EXEC="start"
+
+if type "$EXEC"; then
+  "$EXEC"
+else
+  error "Action '$EXEC' is not defined!" fatal 1
+fi

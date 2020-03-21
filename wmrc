@@ -1,4 +1,4 @@
-#! /usr/bin/dash
+#! /usr/bin/env dash
 
 export DIR
 export WMRC
@@ -77,6 +77,25 @@ section() {
 
 }
 
+variables() {
+
+  L="a-zA-Z" # Letters
+  N="0-9" # Numbers
+  S="_" # Special characters
+  V="(\%[$L][$L$N$S]+)" # Variable name
+  C="([$L$N$S]+)" # variable constant
+
+  VARS="$(sed "s/ //g; s/#.*//g; /^$/d" "$RC" | grep -Po "$V\=$C")"
+
+  ENVVARS=""
+  for V in $VARS; do
+    VN="$(echo "$V" | sed "s/\%//; s/=.*$//")"
+    VV="$(echo "$V" | sed "s/.*=//;")"
+    ENVVARS="$ENVVARS$VN=$VV "
+  done
+
+} 
+
 modules() {
 
   L="a-zA-Z" # Letters
@@ -139,8 +158,8 @@ execute() {
   done
 
   [ -z "$FLAG_ASYNC_LOCK" ] && \
-    nohup DIR="$MODULES/$1" "$MODULES/$1/$2" $3 >/dev/null 2>&1 || \
-    DIR="$MODULES/$1" "$MODULES/$1/$2" $3 >/dev/null || \
+    nohup DIR="$MODULES/$1" env $ENVVARS "$MODULES/$1/$2" $3 >/dev/null 2>&1 || \
+    DIR="$MODULES/$1" env $ENVVARS "$MODULES/$1/$2" $3 >/dev/null || \
       error "Error occurred while running module '$1/$2($3)'!"
 
 }
@@ -177,6 +196,7 @@ main() {
     *)
       section "$1" || \
         error "Section '$1' not found or empty" fatal 2;
+      variables;
       modules "$SECTION";;
   esac
 
