@@ -11,6 +11,8 @@ RC="$DIR/rc.conf"
 HOST="$(hostname)"
 HANDLERS="$DIR/handlers"
 
+DRY_RUN="false"
+
 error() {
 
   >&2 echo "$1"
@@ -34,6 +36,19 @@ section() {
 
   [ -f "$RC" ] || error "Configuration file not found!" fatal 3
 
+  local L
+  local N
+  local S
+  local W
+  local Q
+  local D
+  local F
+  local P
+  local M
+  local A
+  local S
+  local E
+
   L="a-zA-Z" # Letters
   N="0-9" # Numbers
   S="_-" # Special characters
@@ -41,12 +56,19 @@ section() {
   Q="\&nbsp" # Quote word separator
   D="([$L$N$S]+\/)" # Module directory
   F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
-  P="(\([$Q$L$N$S]+(,[$Q$L$N$S]+)*\))?" # Module parameters
+  P="(\(([$Q$L$N$S]+(,[$Q$L$N$S]+)*)*\))?" # Module parameters
   M="($F$P)" # Module file with parameters
   A="(before|after|replace)" # Section header arguments
   S="(\[$1(@$HOST)?(:$A)?\])" # Section header
   E="$D($M(,($M|$W))*|$W)" # Section entry
   
+  local RG
+  local MATCH
+  local MOD
+  local MODR
+  local ARG
+  local M
+
   RG="(($S)(\n$E)+\n?)"
   MATCH="$(awk '!(NR%2){gsub(FS,"\\&nbsp")}1' ORS="" RS="'" "$RC" | \
          sed "s/ //g; s/#.*//g; /^$/d;" | grep -Pzo "$RG")"
@@ -81,24 +103,50 @@ section() {
 
 variables() {
 
+  local L
+  local N
+  local S
+  local V
+  local C
+
   L="a-zA-Z" # Letters
   N="0-9" # Numbers
   S="_" # Special characters
   V="(\%[$L][$L$N$S]+)" # Variable name
-  C="([$L$N$S]+)" # variable constant
+  C="([$L$N$S]+)" # variable value
+
+  local VARS
+  local VN
+  local VV
 
   VARS="$(sed "s/ //g; s/#.*//g; /^$/d" "$RC" | grep -Po "$V\=$C")"
 
   ENVVARS=""
   for V in $VARS; do
+    
     VN="$(echo "$V" | sed "s/\%//; s/=.*$//")"
     VV="$(echo "$V" | sed "s/.*=//;")"
+
+    [ "$DRY_RUN" = "true" ] && echo " - $VN: $VV"
+
     ENVVARS="$ENVVARS$VN=$VV "
+
   done
 
 } 
 
 modules() {
+
+  local L
+  local N
+  local S
+  local W
+  local Q
+  local D
+  local F
+  local P
+  local M
+  local E
 
   L="a-zA-Z" # Letters
   N="0-9" # Numbers
@@ -107,9 +155,19 @@ modules() {
   Q="\&nbsp" # Quote word separator
   D="([$L$N$S]+)\/" # Module directory
   F="([$L$N][$L$N$S]*)(\.[$L$N$S]+)*" # Module file
-  P="(\([$Q$L$N$S]+(,[$Q$L$N$S]+)*\))?" # Module parameters
+  P="(\(([$Q$L$N$S]+(,[$Q$L$N$S]+)*)*\))?" # Module parameters
   M="($F$P)" # Module file with parameters
   E="($M(,$M)*(,$W)?|$W)" # Section entry
+
+  local EXECUTE
+  local ME
+  local MDIR
+  local ALL
+  local MODS
+  local M
+  local EXE
+  local PRM
+  local RUN
 
   EXECUTE=""
   for ME in $1; do
@@ -144,6 +202,13 @@ execute() {
     error "Module '$1/$2' is not executable by this user!" || \
     return
 
+  local DEPS
+  local FLAGS
+  local FLAG_ASYNC_LOCK
+  local F
+  local PRM
+  local CMD
+
   DEPS="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$1/$2" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
   for D in $DEPS; do
     [ -n "$(command -v "$D")" ] || \
@@ -163,16 +228,24 @@ execute() {
   PRM="\"$(echo "$3" | sed "s/ /\" \"/g; s/\&nbsp/ /g")\""
   CMD="DIR=$MODULES/$1 env $ENVVARS $MODULES/$1/$2 $PRM >/dev/null"
 
-  if [ -z "$FLAG_ASYNC_LOCK" ]; then
-    nohup eval "$CMD" 2>&1
+  if [ "$DRY_RUN" = "true" ]; then
+    [ -z "$3" ] && PRM="" || PRM="($PRM)"
+    echo " - $1/$2 $PRM"
+  elif [ -z "$FLAG_ASYNC_LOCK" ]; then
+    eval "$CMD" 2>&1 &
   else
     eval "$CMD" || \
-      error "Error occurred while running module '$1/$2($PRM)'!"
+      error "Error occurred while running module '$1/$2 ($PRM)'!"
   fi
 
 }
 
 dependencies() {
+
+  local MODS
+  local DEPS
+  local M
+  local D
 
   MODS="$(find "$MODULES" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
   DEPS=""
@@ -191,21 +264,54 @@ dependencies() {
 
 }
 
+dry_run() {
+
+  DRY_RUN="true"
+
+  echo "Section '$1':"
+  section "$1" || \
+    error "Section '$1' not found or empty" fatal 2
+
+  echo "Variables:"
+  variables
+
+  echo "Modules:"
+  modules "$SECTION"
+
+}
+
+run() {
+
+  section "$1" || \
+    error "Section '$1' not found or empty" fatal 2
+
+  variables
+  modules "$SECTION"
+
+}
+
+help() {
+
+  cat "$DIR/man.txt"
+
+}
+
 main() {
 
   [ -z "$DISPLAY" ] && error "Environment variable 'DISPLAY' is not set!" fatal 1
   [ -z "$1" ] && handlers && exit
 
   case "$1" in
-    "-d"|"--dependencies")
+    "-d"|"--deps")
       dependencies;;
-    "-m"|"--missing-dependencies")
+    "-m"|"--missing-deps")
       dependencies missing;;
+    "-l"|"--dry-run")
+      dry_run "$2";;
+    "-h"|"--help")
+      help;;
     *)
-      section "$1" || \
-        error "Section '$1' not found or empty" fatal 2;
-      variables;
-      modules "$SECTION";;
+      run "$1";;
   esac
 
 }
