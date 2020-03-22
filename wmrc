@@ -292,7 +292,7 @@ run() {
 
 help() {
 
-  cat "$DIR/man.txt"
+  less "$DIR/readme.txt"
 
 }
 
