@@ -1,5 +1,5 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: sxhkd
+# WMRC_DEPS: pgrep, sxhkd
 # WMRC_FLAGS:
 
 reload() {
@@ -10,7 +10,6 @@ reload() {
   pkill -USR1 -x sxhkd
 
 }
-
 
 start() {
 

@@ -1,5 +1,5 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: rofi, xdotool, xclip
+# WMRC_DEPS: rofi, xdotool, xclip, perl, xdg-open
 # WMRC_FLAGS:
 
 start() {
