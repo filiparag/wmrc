@@ -49,7 +49,7 @@ stop() {
   local PID
   
   for PID in $(pgrep -u "$(whoami)" polybar); do
-    kill "$PID"
+    kill -9 "$PID"
   done
 
 }
