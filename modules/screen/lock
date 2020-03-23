@@ -1,5 +1,5 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: i3lock, xrandr, convert, perl, xidlehook
+# WMRC_DEPS: i3lock, xrandr, convert, perl, xidlehook, xkb-switch, xset, xdotool
 # WMRC_FLAGS:
 
 CACHE_DIR="$HOME/.cache/lockscreen"
@@ -93,10 +93,39 @@ lock() {
 
 }
 
+smart_lock() {
+
+  LANG="$(xkb-switch -p)"
+  CAPS="$(xset -q | 
+        grep -Pzo "Caps Lock: +(on|off)" |
+        sed "s/^.*: *//" | 
+        tr '\0' '\n')"
+
+  xkb-switch -s us
+  if [ "$CAPS" = "on" ]; then
+    xdotool key Caps_Lock
+  fi
+
+  if [ "$1" != "screen=on" ]; then
+    sleep 0.2
+    xset dpms force off
+  fi
+
+  lock 'lock' 'wait'
+
+  xkb-switch -s "$LANG"
+  if [ "$CAPS" = "on" ]; then
+    xdotool key Caps_Lock
+  fi
+
+}
+
 start() {
 
   [ -z "$(pgrep -u "$(whoami)" xidlehook)" ] || \
     error "Lockscreen daemon is already running!" fatal 2
+
+  generate_composite
 
   local BLANK_TIMEOUT
   local LOCK_TIMEOUT
@@ -113,7 +142,7 @@ start() {
 		--timer $BLANK_TIMEOUT \
 			"xset dpms force off" '' \
 		--timer $LOCK_TIMEOUT \
-			"$MODULES/screen/lock lock" '' \
+			"$MODULES/screen/lock smart_lock" '' \
 		>/dev/null &
 
 }

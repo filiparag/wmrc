@@ -2,7 +2,8 @@ NAME
     WMRC - window manager modules
 
 SYNOPSIS
-    wmrc [-l, --dry-run] section | -d, --deps | -m, --missing-deps
+    wmrc [-l, --dry-run] [-v, --debug] section 
+         | -d, --deps | -m, --missing-deps
 
 DESCRIPTION
     WMRC is a shell utility for extending window manager

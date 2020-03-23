@@ -289,23 +289,33 @@ help() {
 
 main() {
 
-  [ -z "$DISPLAY" ] && error "Environment variable 'DISPLAY' is not set!" fatal 1
-  [ -z "$1" ] && run "init" && exit
+  [ -z "$DISPLAY" ] && \
+    error "Environment variable 'DISPLAY' is not set!" fatal 1
+  
+  local ARG1
+  local ARG2
+  
+  ARG1="$1"
+  [ -z "$1" ] && ARG1="init"
 
-  case "$1" in
+  ARG2="$2"
+  [ -n "$1" ] && [ -z "$2" ] && ARG2="init"
+
+
+  case "$ARG1" in
     "-d"|"--deps")
       dependencies;;
     "-m"|"--missing-deps")
       dependencies missing;;
     "-l"|"--dry-run")
-      dry_run "$2";;
+      dry_run "$ARG2";;
     "-v"|"--debug")
       DEBUG="true";
-      run "$2";;
+      run "$ARG2";;
     "-h"|"--help")
       help;;
     *)
-      run "$1";;
+      run "$ARG1";;
   esac
 
 }
