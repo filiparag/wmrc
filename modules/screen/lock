@@ -2,7 +2,7 @@
 # WMRC_DEPS: i3lock, xrandr, convert, perl, xidlehook
 # WMRC_FLAGS:
 
-CACHE_DIR="$HOME/.cache/lockscreen/"
+CACHE_DIR="$HOME/.cache/lockscreen"
 
 generate_individual() {
 
@@ -24,7 +24,7 @@ generate_individual() {
   MD5_BKG_IMG="$(md5sum "$BCK_IMG" | cut -c 1-16)"
   MD5_SCREEN_CONFIG="$(echo "$MONITORS" | md5sum - | cut -c 1-16)"
 
-  OUTPUT_IMG="$CACHE_DIR$MD5_SCREEN_CONFIG.$MD5_BKG_IMG.png"
+  OUTPUT_IMG="$CACHE_DIR/$MD5_SCREEN_CONFIG.$MD5_BKG_IMG.png"
   OUTPUT_IMG_WIDTH=0
   OUTPUT_IMG_HEIGHT=0
 
@@ -46,7 +46,7 @@ generate_individual() {
     X=$3
     Y=$4
     
-    CACHE_IMG="$CACHE_DIR$W.$H.$MD5_BKG_IMG.png"
+    CACHE_IMG="$CACHE_DIR/$W.$H.$MD5_BKG_IMG.png"
 
     [ -f "$CACHE_IMG" ] || \
       convert "$BCK_IMG" '-resize' "${W}X${H}^" \
