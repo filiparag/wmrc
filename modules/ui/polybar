@@ -1,0 +1,50 @@
+#! /usr/bin/env dash
+# WMRC_DEPS: polybar
+# WMRC_FLAGS:
+
+start() {
+
+  local WLP
+  local ENP
+  local MNT
+  local MONITORS
+  local M_PRIMARY
+  local M_ALL
+  local M
+
+  WLP=$(ip -o link show | awk -F': ' '{print $2}' | grep wlp)
+	ENP=$(ip -o link show | awk -F': ' '{print $2}' | grep enp)
+	MNT=$(lsblk | awk '/\//{printf "mount-"NR-2" = "$7"\n"}')
+
+  M_PRIMARY="$(xrandr --query | grep " primary" | cut -d" " -f1)"
+  M_ALL="$(xrandr --query | grep " connected" | cut -d" " -f1)"
+
+  case "$2" in
+    primary)
+      MONITORS="$M_PRIMARY";;
+    ""|all)
+      MONITORS="$M_ALL";;
+    *)
+      for M in $(echo "$@" | cut -d' ' -f2- | sed "s/ /\n/g"); do
+        echo "$M_ALL" | grep -q "^$M$" && \
+          MONITORS="$MONITORS $M" || \
+          error "Monitor '$M' is not connected!"
+      done;;
+  esac
+
+  for M in $MONITORS; do
+    MONITOR=$M WLP=$WLP ENP=$ENP MNT=$MNT polybar --reload main &
+  done
+
+}
+
+stop() {
+
+  local PID
+  for PID in $(pidof polybar); do
+    kill "$PID"
+  done
+
+}
+
+. "$MODULES/init"

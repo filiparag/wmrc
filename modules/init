@@ -1,10 +1,10 @@
 #! /usr/bin/env dash
 
 restart() {
-  type start && type stop || \
+  type start >/dev/null && type stop >/dev/null || \
     error "This module can not be restarted!" fatal 1
-  stop
-  start
+  stop "$@"
+  start "$@"
 }
 
 error() {
