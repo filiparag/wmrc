@@ -1,8 +1,11 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: polybar
+# WMRC_DEPS: polybar, pgrep, xrandr
 # WMRC_FLAGS:
 
 start() {
+
+  [ -z "$(pgrep -u "$(whoami)" polybar)" ] || \
+    error "Polybar is already running!" fatal 2
 
   local WLP
   local ENP
@@ -40,8 +43,12 @@ start() {
 
 stop() {
 
+  [ -z "$(pgrep -u "$(whoami)" polybar)" ] && \
+    error "Polybar is not running!" fatal 3
+
   local PID
-  for PID in $(pidof polybar); do
+  
+  for PID in $(pgrep -u "$(whoami)" polybar); do
     kill "$PID"
   done
 
