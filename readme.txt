@@ -20,6 +20,10 @@ OPTIONS
     -m, --missiong-deps
         Similar to previous option, but for only
         displaying missing commands.
+    -v, --debug
+        Verbose mode in which all modules are loaded
+        sequentualy (as if they all had async_lock
+        flag enabled). This mode is useful for debugging.
 
 CONFIGURATION:
     Environment variable:

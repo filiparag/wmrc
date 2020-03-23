@@ -1,4 +1,0 @@
-#! /usr/bin/dash
-
-DIR="$(dirname "$(readlink -f "$0")")"
-"$DIR/../wmrc" init

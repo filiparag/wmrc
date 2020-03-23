@@ -12,6 +12,7 @@ HOST="$(hostname)"
 HANDLERS="$DIR/handlers"
 
 DRY_RUN="false"
+DEBUG="false"
 
 error() {
 
@@ -19,16 +20,6 @@ error() {
 
   [ -z "$3" ] && EXIT_CODE=1 || EXIT_CODE=2
   [ "$2" = "fatal" ] && exit "$EXIT_CODE"
-
-}
-
-handlers() {
-
-  HND="$(find "$HANDLERS" -type f -executable)"
-  
-  for H in $HND; do
-    nohup "$H" >/dev/null 2>&1
-  done
 
 }
 
@@ -231,7 +222,7 @@ execute() {
   if [ "$DRY_RUN" = "true" ]; then
     [ -z "$3" ] && PRM="" || PRM="($PRM)"
     echo " - $1/$2 $PRM"
-  elif [ -z "$FLAG_ASYNC_LOCK" ]; then
+  elif [ -z "$FLAG_ASYNC_LOCK" ] && [ "$DEBUG" = "false" ]; then
     eval "$CMD" 2>&1 &
   else
     eval "$CMD" || \
@@ -299,7 +290,7 @@ help() {
 main() {
 
   [ -z "$DISPLAY" ] && error "Environment variable 'DISPLAY' is not set!" fatal 1
-  [ -z "$1" ] && handlers && exit
+  [ -z "$1" ] && run "init" && exit
 
   case "$1" in
     "-d"|"--deps")
@@ -308,6 +299,9 @@ main() {
       dependencies missing;;
     "-l"|"--dry-run")
       dry_run "$2";;
+    "-v"|"--debug")
+      DEBUG="true";
+      run "$2";;
     "-h"|"--help")
       help;;
     *)

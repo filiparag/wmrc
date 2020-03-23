@@ -68,10 +68,15 @@ generate_individual() {
 
 generate_composite() {
 
-  generate_individual && ! [ -f "$OUTPUT_IMG" ] && \
+  generate_individual
+  
+  if ! [ -f "$OUTPUT_IMG" ]; then
+
     convert -size ${OUTPUT_IMG_WIDTH}x${OUTPUT_IMG_HEIGHT} \
-      "xc:#101010" "$OUTPUT_IMG" && \
+      "xc:#101010" "$OUTPUT_IMG"
     convert "$OUTPUT_IMG" $PARAMS "$OUTPUT_IMG"
+    
+  fi
 
 }
 
