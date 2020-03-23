@@ -18,7 +18,7 @@ error() {
 [ -z "$MODULES" ] && error "Environment variable 'MODULES' is not set!" fatal 1
 
 EXEC="$1"
-[ -z "$EXEC" ] || ! type "$EXEC" >/dev/null && EXEC="start"
+[ -z "$EXEC" ] && EXEC="start"
 
 if type "$EXEC" >/dev/null; then
   "$EXEC" "$@"

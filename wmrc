@@ -268,9 +268,9 @@ dry_run() {
 
   DRY_RUN="true"
 
-  echo "Section '$1':"
   section "$1" || \
     error "Section '$1' not found or empty" fatal 2
+  echo "Section '$1':"
 
   echo "Variables:"
   variables
