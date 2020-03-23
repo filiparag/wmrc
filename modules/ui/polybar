@@ -46,11 +46,7 @@ stop() {
   [ -z "$(pgrep -u "$(whoami)" polybar)" ] && \
     error "Polybar is not running!" fatal 3
 
-  local PID
-  
-  for PID in $(pgrep -u "$(whoami)" polybar); do
-    kill -9 "$PID"
-  done
+  killall -u "$(whoami)" -9 polybar > /dev/null
 
 }
 

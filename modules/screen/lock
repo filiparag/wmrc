@@ -1,5 +1,5 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: i3lock, xrandr, convert, perl
+# WMRC_DEPS: i3lock, xrandr, convert, perl, xidlehook
 # WMRC_FLAGS:
 
 CACHE_DIR="$HOME/.cache/lockscreen/"
@@ -75,7 +75,7 @@ generate_composite() {
 
 }
 
-start() {
+lock() {
 
   [ -z "$(pgrep -u "$(whoami)" i3lock)" ] || \
     error "Lockscreen is already running!" fatal 2
@@ -85,6 +85,40 @@ start() {
   [ "$2" = "wait" ] && WAIT="-n"
 
   i3lock -u -i "$OUTPUT_IMG" -t -e "$WAIT"
+
+}
+
+start() {
+
+  [ -z "$(pgrep -u "$(whoami)" xidlehook)" ] || \
+    error "Lockscreen daemon is already running!" fatal 2
+
+  local BLANK_TIMEOUT
+  local LOCK_TIMEOUT
+
+  # Time in seconds
+  BLANK_TIMEOUT=300
+  LOCK_TIMEOUT=305
+
+  xset s off -dpms &
+
+	xidlehook \
+		--not-when-fullscreen \
+		--not-when-audio \
+		--timer $BLANK_TIMEOUT \
+			"xset dpms force off" '' \
+		--timer $LOCK_TIMEOUT \
+			"$MODULES/screen/lock lock" '' \
+		>/dev/null &
+
+}
+
+stop() {
+
+  [ -z "$(pgrep -u "$(whoami)" xidlehook)" ] && \
+    error "Lockscreen daemon is not running!" fatal 3
+
+  killall -u "$(whoami)" -9 xidlehook > /dev/null
 
 }
 

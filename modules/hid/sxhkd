@@ -25,11 +25,7 @@ stop() {
   [ -z "$(pgrep -u "$(whoami)" sxhkd)" ] && \
     error "Sxhkd is not running!" fatal 3
 
-  local PID
-  
-  for PID in $(pgrep -u "$(whoami)" sxhkd); do
-    kill -9 "$PID"
-  done
+  killall -u "$(whoami)" -9 sxhkd > /dev/null
 
 }
 
