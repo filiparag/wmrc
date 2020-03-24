@@ -106,7 +106,7 @@ smart_lock() {
     xdotool key Caps_Lock
   fi
 
-  if [ "$1" != "screen=on" ]; then
+  if [ "$2" != "screen_on" ]; then
     sleep 0.2
     xset dpms force off
   fi

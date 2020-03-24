@@ -6,17 +6,16 @@ start() {
 
   rofi -no-lazy-grab -modi drun,run,window,ssh,combi \
     -combi-modi drun,window,run,ssh \
+    -columns 2 \
     -show combi \
     -show-icons true \
-    -terminal "$TERMINAL" \
-    -theme style/style_normal_grid.rasi
+    -terminal "$TERMINAL"
 
 }
 
 calc() {
 
-  rofi -no-lazy-grab -modi calc -show calc -p \
-	  -theme style/style_normal_grid.rasi
+  rofi -no-lazy-grab -modi calc -show calc
 
 }
 
@@ -40,11 +39,7 @@ files() {
 
     SEL="$(echo "$LL" |
       rofi -dmenu -p "$CUR" -i \
-      -columns 1 \
-      -kb-row-tab '' \
-      -kb-row-select Tab \
-      -kb-custom-1 Ctrl+c \
-      -theme style/style_normal_grid.rasi)"
+      -columns 1)"
 
     [ -z "$SEL" ] && return
 
@@ -76,10 +71,6 @@ character() {
   SEL="$(echo "$LIST" |
     rofi -dmenu -p 'character' -i \
     -columns 3 \
-		-kb-row-tab '' \
-		-kb-row-select Tab \
-		-kb-custom-1 Ctrl+c \
-    -theme style/style_normal_grid.rasi \
 		-icon-theme -font "Twitter Color Emoji 11")"
 
   if [ -n "$SEL" ]; then

@@ -5,11 +5,10 @@ export WMRC
 export MODULES
 
 DIR="$(dirname "$(readlink -f "$0")")"
-WMRC="$DIR/$(basename "$0")"
+WMRC="$DIR/$(basename "$(readlink -f "$0")")"
 MODULES="$DIR/modules"
 RC="$DIR/rc.conf"
 HOST="$(hostname)"
-HANDLERS="$DIR/handlers"
 
 DRY_RUN="false"
 DEBUG="false"
