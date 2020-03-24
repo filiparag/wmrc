@@ -51,6 +51,62 @@ workspaces() {
 
 }
 
+move_node() {
+
+  WIN="$(bspc query -T -n | perl -0777 -nle 'print "$1, " while m/\"className\":\"([^\\"]+)\"/gm' | sed -e 's/\, $//')"
+	WINID="$(bspc query -N -n)"
+  MON="$(bspc query -M --names)"
+  DCUR="$(bspc query -D -d)"
+	DSK=""
+	for M in $MON; do
+		for DID in $(bspc query -D -m "$M"); do
+			[ "$DID" = "$DCUR" ] && continue
+      D="$(bspc query -D -m "$M" -d "$DID" --names)"
+			N="$(bspc query -T -d "$DID" | perl -0777 -nle 'print "$1, " while m/\"className\":\"([^\\"]+)\"/gm' | sed -e 's/\, $//')"
+			DSK="$DSK\n$D :: $M"
+      [ -z "$N" ] || DSK="$DSK :: $N"
+		done
+	done
+	SEL="$(echo "$DSK" | awk 'NF' | rofi -dmenu -i -columns 1 -p "Move $WIN to desktop")"
+  [ -z "$SEL" ] && return
+  TAR="$(bspc query -D -m "$(echo "$SEL" | cut -d' ' -f3)" -d "$(echo "$SEL" | cut -d' ' -f1)")"
+  bspc node "$WINID" -d "$TAR" --follow
+
+}
+
+swap_desktop() {
+
+  MON="$(bspc query -M --names)"
+  DCUR="$(bspc query -D -d)"
+	DSK=""
+	for M in $MON; do
+		for DID in $(bspc query -D -m "$M"); do
+			[ "$DID" = "$DCUR" ] && continue
+      D="$(bspc query -D -m "$M" -d "$DID" --names)"
+			N="$(bspc query -T -d "$DID" | perl -0777 -nle 'print "$1, " while m/\"className\":\"([^\\"]+)\"/gm' | sed -e 's/\, $//')"
+			DSK="$DSK\n$D :: $M"
+      [ -z "$N" ] || DSK="$DSK :: $N"
+		done
+	done
+	SEL="$(echo "$DSK" | awk 'NF' | rofi -dmenu -i -columns 1 -p 'Swap current desktop with')"
+  [ -z "$SEL" ] && return
+  SRC="$(bspc query -D -d)"
+  TAR="$(bspc query -D -m "$(echo "$SEL" | cut -d' ' -f3)" -d "$(echo "$SEL" | cut -d' ' -f1)")"
+  bspc desktop "$TAR" --rename "$(bspc query -D -d --names)"
+  bspc desktop "$SRC" --rename "$(echo "$SEL" | cut -d' ' -f1)"
+  bspc desktop --swap "$TAR" --follow
+
+}
+
+swap_monitor() {
+
+  MON="$(bspc query -M --names | sed "/$(bspc query -M -m --names)/d")"
+	SEL="$(echo "$MON" | rofi -dmenu -i -columns 1 -p 'Swap current monitor with')"
+  [ -z "$SEL" ] && return
+  bspc monitor -s "$(bspc query -M -m "$SEL")"
+
+}
+
 start() {
 
   preferences
