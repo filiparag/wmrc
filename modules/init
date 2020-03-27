@@ -13,7 +13,7 @@ error() {
   [ "$2" = "fatal" ] && exit "$EXIT_CODE"
 }
 
-[ -z "$DIR" ] && error "Environment variable 'DIR' is not set!" fatal 1
+[ -z "$WMRC_DIR" ] && error "Environment variable 'WMRC_DIR' is not set!" fatal 1
 [ -z "$WMRC" ] && error "Environment variable 'WMRC' is not set!" fatal 1
 [ -z "$MODULES" ] && error "Environment variable 'MODULES' is not set!" fatal 1
 

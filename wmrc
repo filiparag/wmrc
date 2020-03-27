@@ -1,13 +1,14 @@
 #! /usr/bin/env dash
 
-export DIR
+export WMRC_DIR
 export WMRC
 export MODULES
 
-DIR="$(dirname "$(readlink -f "$0")")"
-WMRC="$DIR/$(basename "$(readlink -f "$0")")"
-MODULES="$DIR/modules"
-RC="$DIR/rc.conf"
+WMRC_USR="$(dirname "$(readlink -f "$0")")"
+WMRC="$(readlink -f "$0")"
+WMRC_DIR="$(readlink -f "$HOME/.config/wmrc")"
+MODULES="$WMRC_DIR/modules"
+RC="$WMRC_DIR/rc.conf"
 HOST="$(hostname)"
 
 DRY_RUN="false"
@@ -216,7 +217,7 @@ execute() {
   done
 
   PRM="\"$(echo "$3" | sed "s/ /\" \"/g; s/\&nbsp/ /g")\""
-  CMD="DIR=$MODULES/$1 env $ENVVARS $MODULES/$1/$2 $PRM >/dev/null"
+  CMD="env $ENVVARS $MODULES/$1/$2 $PRM >/dev/null"
 
   if [ "$DRY_RUN" = "true" ]; then
     [ -z "$3" ] && PRM="" || PRM="($PRM)"
@@ -237,7 +238,7 @@ dependencies() {
   local M
   local D
 
-  MODS="$(find "$MODULES" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
+  MODS="$(find "$MODULES/" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
   DEPS=""
   
   for M in $MODS; do
@@ -280,16 +281,54 @@ run() {
 
 }
 
+init() {
+
+  mkdir -p "$WMRC_DIR"
+
+  if ! [ -f "$RC" ]; then
+    cp "$WMRC_USR/$(basename "$RC")" "$WMRC_DIR"
+  else
+    error "Configuration file exists, skipping!"
+  fi
+  
+  if ! [ -d "$MODULES" ]; then
+    cp "$WMRC_USR/$(basename "$MODULES")" "$WMRC_DIR"
+  else
+    error "Modules directory exists, skipping!"
+  fi
+  
+}
+
+vars() {
+
+  variables
+  echo "$ENVVARS" | tr ' ' '\n' | sed '/^$/d'
+
+}
+
 help() {
 
-  less "$DIR/readme.txt"
+  less "$WMRC_USR/readme.txt"
+
+}
+
+check() {
+
+  [ "$1" = "display" ] && [ -z "$DISPLAY" ] && \
+    error "Environment variable 'DISPLAY' is not set!" fatal 1
+
+  [ -d "$WMRC_DIR" ] || \
+    error "Configuration directory '$WMRC_DIR' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
+
+  [ -d "$MODULES" ] || \
+    error "Modules directory '$MODULES' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
+
+  [ -f "$RC" ] || \
+    error "Configuration file '$RC' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
 
 }
 
 main() {
-
-  [ -z "$DISPLAY" ] && \
-    error "Environment variable 'DISPLAY' is not set!" fatal 1
   
   local ARG1
   local ARG2
@@ -300,20 +339,29 @@ main() {
   ARG2="$2"
   [ -n "$1" ] && [ -z "$2" ] && ARG2="init"
 
-
   case "$ARG1" in
     "-d"|"--deps")
+      check;
       dependencies;;
     "-m"|"--missing-deps")
+      check;
       dependencies missing;;
     "-l"|"--dry-run")
+      check;
       dry_run "$ARG2";;
-    "-v"|"--debug")
+    "-g"|"--debug")
       DEBUG="true";
+      check display;
       run "$ARG2";;
+    "-v"|"--vars")
+      check;
+      vars;;
+    "-i"|"--init")
+      init;;
     "-h"|"--help")
       help;;
     *)
+      check display;
       run "$ARG1";;
   esac
 

@@ -1,6 +1,13 @@
 #! /usr/bin/env dash
-# WMRC_DEPS: bspc, xrandr
+# WMRC_DEPS: bspwm, bspc, xrandr
 # WMRC_FLAGS:
+
+init() {
+
+  bspwm || \
+    error "Failed to start bspwm window manager!" fatal 2
+
+}
 
 preferences() {
 
@@ -109,6 +116,7 @@ swap_monitor() {
 
 start() {
 
+  init
   preferences
   workspaces
 

@@ -2,8 +2,9 @@ NAME
     WMRC - window manager modules
 
 SYNOPSIS
-    wmrc [-l, --dry-run] [-v, --debug] section 
+    wmrc [-l, --dry-run] [-g, --debug] <section> 
          | -d, --deps | -m, --missing-deps
+         | -v, --vars <variable> | -h, --help
 
 DESCRIPTION
     WMRC is a shell utility for extending window manager
@@ -14,6 +15,10 @@ OPTIONS
     -l, --dry-run
         Show defined variables and section's module
         execution order insead of running them.
+    -g, --debug
+        Debugging mode in which all modules are loaded
+        sequentualy (as if they all had async_lock
+        flag enabled). This mode is useful for debugging.
     -d, --deps
         List of all commands required by modules.
         This will not show software package names
@@ -21,11 +26,11 @@ OPTIONS
     -m, --missiong-deps
         Similar to previous option, but for only
         displaying missing commands.
-    -v, --debug
-        Verbose mode in which all modules are loaded
-        sequentualy (as if they all had async_lock
-        flag enabled). This mode is useful for debugging.
-
+    -v, --vars
+        Get values of variables defined in the 
+        configuration file.
+    -h, --help
+        Show usage manual.
 CONFIGURATION:
     Environment variable:
         %variable_name = value
