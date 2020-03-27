@@ -1,0 +1,12 @@
+#! /usr/bin/env dash
+
+start() {
+  echo "example service started"
+  echo "params: $@"
+}
+
+stop() {
+  echo "example service stopped"
+}
+
+. "$MODULES/init"

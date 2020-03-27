@@ -1,5 +1,7 @@
 NAME
-    WMRC - window manager modules
+    WMRC - shell utility for extending window manager 
+           capabilities using modules with dependency
+           and error checking
 
 SYNOPSIS
     wmrc [-l, --dry-run] [-g, --debug] <section> 
@@ -31,6 +33,7 @@ OPTIONS
         configuration file.
     -h, --help
         Show usage manual.
+
 CONFIGURATION:
     Environment variable:
         %variable_name = value
