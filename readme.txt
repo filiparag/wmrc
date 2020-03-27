@@ -60,3 +60,5 @@ MODULES:
     Supported flags:
         async_lock - prevent subsequent modules 
           from loading until the script finishes
+        required - prevent subsequent modules 
+          from loading if the script fails

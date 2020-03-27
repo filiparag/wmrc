@@ -4,7 +4,7 @@ export WMRC_DIR
 export WMRC
 export MODULES
 
-WMRC_USR="$(dirname "$(readlink -f "$0")")"
+WMRC_USR="/usr/share/wmrc"
 WMRC="$(readlink -f "$0")"
 WMRC_DIR="$(readlink -f "$HOME/.config/wmrc")"
 MODULES="$WMRC_DIR/modules"
@@ -207,12 +207,15 @@ execute() {
   done
 
   FLAG_ASYNC_LOCK=""
+  FLAG_REQUIRED=""
 
   FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$MODULES/$1/$2" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
   for F in $FLAGS; do
     case "$F" in
       async_lock)
         FLAG_ASYNC_LOCK="true";;
+      required)
+        FLAG_REQUIRED="true";;
     esac
   done
 
@@ -222,11 +225,16 @@ execute() {
   if [ "$DRY_RUN" = "true" ]; then
     [ -z "$3" ] && PRM="" || PRM="($PRM)"
     echo " - $1/$2 $PRM"
-  elif [ -z "$FLAG_ASYNC_LOCK" ] && [ "$DEBUG" = "false" ]; then
+  elif [ -z "$FLAG_REQUIRED" ] && \
+       [ -z "$FLAG_ASYNC_LOCK" ] && \
+       [ "$DEBUG" = "false" ]; then
     eval "$CMD" 2>&1 &
   else
     eval "$CMD" || \
       error "Error occurred while running module '$1/$2 ($PRM)'!"
+    if [ "$FLAG_REQUIRED" = "true" ] && [ -n "$?" ]; then
+      error "Module '$1/$2' is required to continue.!" fatal 4
+    fi 
   fi
 
 }
@@ -286,13 +294,13 @@ init() {
   mkdir -p "$WMRC_DIR"
 
   if ! [ -f "$RC" ]; then
-    cp "$WMRC_USR/$(basename "$RC")" "$WMRC_DIR"
+    cp --preserve=mode "$WMRC_USR/$(basename "$RC")" "$WMRC_DIR"
   else
     error "Configuration file exists, skipping!"
   fi
   
   if ! [ -d "$MODULES" ]; then
-    cp "$WMRC_USR/$(basename "$MODULES")" "$WMRC_DIR"
+    cp -r --preserve=mode "$WMRC_USR/$(basename "$MODULES")" "$WMRC_DIR"
   else
     error "Modules directory exists, skipping!"
   fi
@@ -318,13 +326,13 @@ check() {
     error "Environment variable 'DISPLAY' is not set!" fatal 1
 
   [ -d "$WMRC_DIR" ] || \
-    error "Configuration directory '$WMRC_DIR' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
+    error "Configuration directory '$WMRC_DIR' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
 
   [ -d "$MODULES" ] || \
-    error "Modules directory '$MODULES' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
+    error "Modules directory '$MODULES' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
 
   [ -f "$RC" ] || \
-    error "Configuration file '$RC' does not exist!\nRun 'wmrc --init' to set defaults." fatal 1
+    error "Configuration file '$RC' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
 
 }
 
