@@ -348,25 +348,29 @@ main() {
   [ -n "$1" ] && [ -z "$2" ] && ARG2="init"
 
   case "$ARG1" in
-    "-d"|"--deps")
+    '-d'|'--deps')
       check;
       dependencies;;
-    "-m"|"--missing-deps")
+    '-m'|'--missing-deps')
       check;
       dependencies missing;;
-    "-l"|"--dry-run")
+    '-l'|'--dry-run')
       check;
       dry_run "$ARG2";;
-    "-g"|"--debug")
-      DEBUG="true";
+    '-r'|'--run-module')
+      check;
+      variables;
+      modules "$ARG2";;
+    '-g'|'--debug')
+      DEBUG='true';
       check display;
       run "$ARG2";;
-    "-v"|"--vars")
+    '-v'|'--vars')
       check;
       vars;;
-    "-i"|"--init")
+    '-i'|'--init')
       init;;
-    "-h"|"--help")
+    '-h'|'--help')
       help;;
     *)
       check display;

@@ -5,6 +5,7 @@ NAME
 
 SYNOPSIS
     wmrc [-l, --dry-run] [-g, --debug] <section> 
+         | -r, --run-module <module>
          | -d, --deps | -m, --missing-deps
          | -v, --vars <variable> | -h, --help
 
@@ -21,6 +22,10 @@ OPTIONS
         Debugging mode in which all modules are loaded
         sequentualy (as if they all had async_lock
         flag enabled). This mode is useful for debugging.
+    -r, --run-module
+        Run specified module in wmrc environment. Syntax
+        for parameters is same as in the configuration
+        file.
     -d, --deps
         List of all commands required by modules.
         This will not show software package names
