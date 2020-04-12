@@ -15,6 +15,9 @@ DESCRIPTION
     checking.
 
 OPTIONS
+    -i, --init
+        Initialize current user's wmrc configuration
+        directory using default values.
     -l, --dry-run
         Show defined variables and section's module
         execution order insead of running them.
@@ -38,35 +41,3 @@ OPTIONS
         configuration file.
     -h, --help
         Show usage manual.
-
-CONFIGURATION:
-    Environment variable:
-        %variable_name = value
-    Values:
-        [a-zA-Z0-9_]
-    Section:
-        [section@hostname:position]
-        directory1/module1(parameters...),module2
-        directory2/module3,*
-        directory3/*
-    Positions:
-        before, after, replace
-    Parameters (Perl regex):
-        [a-zA-Z0-9_-], 'String with spaces'
-    Comments:
-        # Example comment
-
-MODULES:
-    Dependencies:
-        Include a comment formatted as:
-        # WMRC_DEPS: dependencies ...
-        at the top of the module.
-    Flags:
-        Include a comment formatted as:
-        # WMRC_FLAGS: flags ...
-        at the top of the module.
-    Supported flags:
-        async_lock - prevent subsequent modules 
-          from loading until the script finishes
-        required - prevent subsequent modules 
-          from loading if the script fails

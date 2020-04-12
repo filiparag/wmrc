@@ -13,7 +13,7 @@
 -r, --run-module <module> | -v, --vars <variable>
 .br
 .B wmrc
--d, --deps | -m, --missing-deps | -h, --help
+-i, --init | -d, --deps | -m, --missing-deps | -h, --help
 
 .SH DESCRIPTION
 .P
@@ -21,6 +21,12 @@ wmrc is a shell utility for extending window manager \
 capabilities using modules with dependency and error checking.
 
 .SH OPTIONS
+.HP
+.B -i, --init
+.br
+Initialize current user's wmrc configuration directory \
+using default values.
+
 .HP
 .B -l, --dry-run
 .br
@@ -67,7 +73,8 @@ Show usage manual.
 .SH CONFIGURATION:
 .SS Environment variable:
 %variable_name = value
-.SS Values:
+.PP
+.B Values:
 [a-zA-Z0-9_]
 .SS Section:
 [section@hostname:position]
