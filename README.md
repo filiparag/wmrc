@@ -100,7 +100,7 @@ Parameters (Perl regex): `[a-zA-Z0-9_-]`, `'String with spaces'`
 
 ### Example configuration file:
 
-`$HOME/.config/wmrc/modules/hid/sxhkd`
+`$HOME/.confg/wmrc/rc.conf`
 ```ini
 %WM = bspwm
 %TERMINAL = xterm

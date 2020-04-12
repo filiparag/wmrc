@@ -162,7 +162,7 @@ modules() {
   for ME in $1; do
 
     MDIR="$(echo "$ME" | sed "s/\/.*//g")"
-    [ -d "`$WMRC_MODULES`/$MDIR" ] || \
+    [ -d "$WMRC_MODULES/$MDIR" ] || \
       error "Module directory '$MDIR' doesn't exist!" || \
       continue
 
