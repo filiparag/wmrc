@@ -1,13 +1,11 @@
 #! /usr/bin/env dash
 
 export WMRC_DIR
-export WMRC
-export MODULES
+export WMRC_MODULES
 
 WMRC_USR="/usr/share/wmrc"
-WMRC="$(readlink -f "$0")"
 WMRC_DIR="$(readlink -f "$HOME/.config/wmrc")"
-MODULES="$WMRC_DIR/modules"
+WMRC_MODULES="$WMRC_DIR/modules"
 RC="$WMRC_DIR/rc.conf"
 HOST="$(hostname)"
 
@@ -164,17 +162,17 @@ modules() {
   for ME in $1; do
 
     MDIR="$(echo "$ME" | sed "s/\/.*//g")"
-    [ -d "$MODULES/$MDIR" ] || \
+    [ -d "`$WMRC_MODULES`/$MDIR" ] || \
       error "Module directory '$MDIR' doesn't exist!" || \
       continue
 
-    ALL="$(find "$MODULES/$MDIR" -maxdepth 1 -type f -executable -printf "%P,")"
+    ALL="$(find "$WMRC_MODULES/$MDIR" -maxdepth 1 -type f -executable -printf "%P,")"
     MODS="$(echo "$ME" | sed "s/.*\///g; s/\*/$ALL/; s/\*//g" | grep -Po "($F$P)|$W")"
 
     for M in $MODS; do
       EXE="$(echo "$M" | sed "s/(.*//g")"
       PRM="$(echo "$M" | sed "s/^$EXE//g; s/(//g; s/)//g; s/,/ /g")"
-      [ -f "$MODULES/$MDIR/$EXE" ] || \
+      [ -f "$WMRC_MODULES/$MDIR/$EXE" ] || \
         error "Module '$MDIR/$EXE' doesn't exist!" || \
         continue
       RUN="$MDIR/$EXE $PRM"
@@ -189,7 +187,7 @@ modules() {
 
 execute() {
 
-  [ -x "$MODULES/$1/$2" ] || \
+  [ -x "$WMRC_MODULES/$1/$2" ] || \
     error "Module '$1/$2' is not executable by this user!" || \
     return
 
@@ -200,7 +198,7 @@ execute() {
   local PRM
   local CMD
 
-  DEPS="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$1/$2" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
+  DEPS="$(grep "\#[ ]*WMRC_DEPS" "$WMRC_MODULES/$1/$2" | sed "s/\# *WMRC_DEPS\: *//; s/,/ /g")"
   for D in $DEPS; do
     [ -n "$(command -v "$D")" ] || \
       error "Module '$1/$2' has a missing dependency: '$D'!"
@@ -209,7 +207,7 @@ execute() {
   FLAG_ASYNC_LOCK=""
   FLAG_REQUIRED=""
 
-  FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$MODULES/$1/$2" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
+  FLAGS="$(grep "\#[ ]*WMRC_FLAGS" "$WMRC_MODULES/$1/$2" | sed "s/\# *WMRC_FLAGS\: *//; s/,/ /g")"
   for F in $FLAGS; do
     case "$F" in
       async_lock)
@@ -220,7 +218,7 @@ execute() {
   done
 
   PRM="\"$(echo "$3" | sed "s/ /\" \"/g; s/\&nbsp/ /g")\""
-  CMD="env $ENVVARS $MODULES/$1/$2 $PRM >/dev/null"
+  CMD="env $ENVVARS $WMRC_MODULES/$1/$2 $PRM >/dev/null"
 
   if [ "$DRY_RUN" = "true" ]; then
     [ -z "$3" ] && PRM="" || PRM="($PRM)"
@@ -246,11 +244,11 @@ dependencies() {
   local M
   local D
 
-  MODS="$(find "$MODULES/" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
+  MODS="$(find "$WMRC_MODULES/" -mindepth 2 -maxdepth 2 -type f -printf "%P ")"
   DEPS=""
   
   for M in $MODS; do
-    D="$(grep "\#[ ]*WMRC_DEPS" "$MODULES/$M" | sed "s/\# *WMRC_DEPS\: *//; s/,/\n/g; s/ //g")"
+    D="$(grep "\#[ ]*WMRC_DEPS" "$WMRC_MODULES/$M" | sed "s/\# *WMRC_DEPS\: *//; s/,/\n/g; s/ //g")"
     DEPS="$DEPS\n$D"
   done
 
@@ -299,8 +297,8 @@ init() {
     error "Configuration file exists, skipping!"
   fi
   
-  if ! [ -d "$MODULES" ]; then
-    cp -r --preserve=mode "$WMRC_USR/$(basename "$MODULES")" "$WMRC_DIR"
+  if ! [ -d "$WMRC_MODULES" ]; then
+    cp -r --preserve=mode "$WMRC_USR/$(basename "$WMRC_MODULES")" "$WMRC_DIR"
   else
     error "Modules directory exists, skipping!"
   fi
@@ -328,8 +326,8 @@ check() {
   [ -d "$WMRC_DIR" ] || \
     error "Configuration directory '$WMRC_DIR' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
 
-  [ -d "$MODULES" ] || \
-    error "Modules directory '$MODULES' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
+  [ -d "$WMRC_MODULES" ] || \
+    error "Modules directory '$WMRC_MODULES' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5
 
   [ -f "$RC" ] || \
     error "Configuration file '$RC' does not exist!\nRun 'wmrc --init' to set defaults." fatal 5

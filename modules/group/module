@@ -9,4 +9,4 @@ stop() {
   echo "example service stopped"
 }
 
-. "$MODULES/init"
+. "$WMRC_MODULES/init"
