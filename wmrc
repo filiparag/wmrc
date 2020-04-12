@@ -314,7 +314,7 @@ vars() {
 
 help() {
 
-  less "$WMRC_USR/readme.txt"
+  cat "$WMRC_USR/readme.txt"
 
 }
 

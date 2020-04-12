@@ -1,0 +1,107 @@
+.\" Manual for wmrc.
+.TH "wmrc" 1 "12 April 2020" "wmrc 1.1" "wmrc manual"
+
+.SH NAME
+.B wmrc
+\- simple modular window manager extensions
+
+.SH SYNOPSIS
+.B wmrc
+[-l, --dry-run] [-g, --debug] <section>
+.br
+.B wmrc
+-r, --run-module <module> | -v, --vars <variable>
+.br
+.B wmrc
+-d, --deps | -m, --missing-deps | -h, --help
+
+.SH DESCRIPTION
+.P
+wmrc is a shell utility for extending window manager \
+capabilities using modules with dependency and error checking.
+
+.SH OPTIONS
+.HP
+.B -l, --dry-run
+.br
+Show defined variables and section's module \
+execution order insead of running them.
+
+.HP
+.B -g, --debug
+.br
+Debugging mode in which all modules are loaded \
+sequentualy (as if they all had async_lock \
+flag enabled). This mode is useful for debugging.
+
+.HP
+.B -r, --run-module
+.br
+Run specified module in wmrc environment. Syntax \
+for parameters is same as in the configuration file.
+
+.HP
+.B -d, --deps
+.br
+List of all commands required by modules. \
+This will not show software package names \
+that provide respective commands in $PATH.
+
+.HP
+.B -m, --missiong-deps
+.br
+Similar to previous option, but for only \
+displaying missing commands.
+
+.HP
+.B -v, --vars
+.br
+Get values of variables defined in the \
+configuration file.
+
+.HP
+.B -h, --help
+.br
+Show usage manual.
+
+.SH CONFIGURATION:
+.SS Environment variable:
+%variable_name = value
+.SS Values:
+[a-zA-Z0-9_]
+.SS Section:
+[section@hostname:position]
+.br
+directory1/module1(parameters...),module2
+.br
+directory2/module3,*
+.br
+directory3/*
+.PP
+.B Positions:
+before, after, replace
+.SS Parameters (Perl regex):
+[a-zA-Z0-9_-], 'String with spaces'
+.SS Comments:
+# Example comment
+
+.SH MODULES:
+.SS Dependencies:
+Include a comment at the top of the module formatted as:
+.br
+# WMRC_DEPS: dependencies ...
+
+.SS Flags:
+Include a comment at the top of the module formatted as:
+.br
+# WMRC_FLAGS: flags ...
+
+.SS Supported flags:
+.HP
+.B async_lock
+.br
+Prevent subsequent modules  from loading until the script finishes.
+.HP
+.B required
+.br
+Prevent subsequent modules from loading if the script fails.
