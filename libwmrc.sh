@@ -65,9 +65,10 @@ call() {
     sh -c "_module='$_callee' && . '$WMRC_DIR/libwmrc.sh' && . '$WMRC_CONFIG/modules/$_callee' && $_params"
     _status="$?"
     if [ "$_status" != 0 ]; then
-        error 'Error executing command'
+        error 'Error executing call' "$_callee::$(echo "$_params" | sed "s/^\(\w\) ?.*$/\1/;s:'::g")"
+        return 1
     else
-        debug 'Command executed successfully'
+        debug 'Call executed successfully'
     fi
 }
 

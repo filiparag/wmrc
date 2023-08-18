@@ -73,6 +73,7 @@ read_config_variables() {
 }
 
 config_unit_list() {
+    debug 'List all units'
     debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
     if ! test -f "$WMRC_CONFIG/rc.conf"; then
         error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
@@ -84,6 +85,7 @@ config_unit_list() {
 }
 
 run_config_unit() {
+    debug 'Run configuration unit'
     debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
     if ! test -f "$WMRC_CONFIG/rc.conf"; then
         error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
@@ -99,18 +101,30 @@ run_config_unit() {
     fi
     _unit="$(
         awk -v target="$1" \
-        'match($0, /^\[(\w+)\]$/, line) {
+        'match($0, /^\[(.+)\]$/, line) {
             section=line[1];
         }
         match($0, /^%.*$/) {
             section="";
         }
-        match($0, /^(\w+\/\w+)(::)?(\w+)?(\((.+)\))?/, line) {
+        match($0, /^(\w+\/\w+)(::)?(\w+)?(\((.+)\))? *(\w+)?/, line) {
             if (section == target) {
-                module=line[1]
-                method=line[3] ? line[3] : "init"
-                args=line[5]
-                printf("module_exec \"%s\" \"%s\" %s\n", module, method, args);
+                module=line[1];
+                method=line[3] ? line[3] : "init";
+                args=line[5];
+                call=sprintf("%s::%s(%s)", module, method, args);s
+                if (line[6] != "crit") {
+                    detach=(line[6] == "wait") ? "" : "&";
+                    printf( \
+                        "info \"Executing %s call\" \"%s\"\n", \
+                        (detach == "") ? "blocking" : "detatched", call \
+                    );
+                    printf("module_exec \"%s\" \"%s\" %s %s\n", module, method, args, detach);
+                } else {
+                    printf("info \"Executing critical call\" \"%s\"\n", call);
+                    printf("module_exec \"%s\" \"%s\" %s || \\\n", module, method, args);
+                    printf("{\n\terror \"Critical task failed, aborting\"\n\texit 1\n}\n");
+                }
             }
         }
     ' "$WMRC_CONFIG/rc.conf")"
@@ -120,6 +134,7 @@ run_config_unit() {
 }
 
 run_method() {
+    debug 'Call method'
     if [ -z "$1" ]; then
         error 'Module name not provided'
         exit 1
@@ -143,6 +158,7 @@ run_method() {
 }
 
 print_variable() {
+    debug 'Print variable'
     if [ -z "$1" ]; then
         error 'Variable name not provided'
         exit 1
@@ -156,9 +172,11 @@ case "$1" in
         error 'No command specified'
         ;;
     "-v"|"--version"|"version")
+        debug 'Print version'
         echo 'wmrc 2.0.0'
         ;;
     "-h"|"--help"|"help")
+        debug 'Print version'
         printf 'wmrc 2.0.0\nFilip Parag <filip@parag.rs>\n\nCommands:\n'
         printf '\tcall <group>/<module> <method> [args...]\n'
         printf '\tvar <variable>\n'

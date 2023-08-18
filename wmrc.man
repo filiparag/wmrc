@@ -78,7 +78,7 @@ List of missing external dependencies
 .SS Environment variables
 %VARIABLE_NAME = <expression>
 .PP
-Note: When accessing variables inside modules, they have
+When accessing variables inside modules, they have
 .B WMRC_
 prefix added
 
@@ -101,9 +101,20 @@ group/module
 .br
 group/module::method
 .br
-group/module::method(arguments...)
+group/module::method(arguments...) flag
 .PP
-Note: Arguments shall be separaated by space, like in shell scripts
+Arguments shall be separated by space, like in shell scripts
+
+.SS Unit call flags
+.HP
+.B wait
+.br
+Wait the call to complete before executing the next one
+
+.HP
+.B crit
+.br
+Wait the call to complete and abort further execution on failure
 
 .SH MODULES
 .SS Dependencies
