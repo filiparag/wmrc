@@ -1,42 +1,47 @@
 #!/bin/sh
 
-LOG_LEVEL="${LOG_LEVEL:-warn}"
+WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
+LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"
 WMRC_CONFIG="$HOME/.config/wmrc"
 
 export _module
-export LOG_LEVEL
+export WMRC_LOG_LEVEL
 export WMRC_CONFIG
 
 error() {
-    echo "$LOG_LEVEL" | grep -qi 'error\|warn\|info\|debug' || return 0
+    echo "$WMRC_LOG_LEVEL" | grep -qi 'error\|warn\|info\|debug' || return 0
     _title="$1"
     shift 1
     _message="$*"
-    >&2 printf '\033[1;37m[%s] \033[1;31m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    printf '\033[1;37m[%s] \033[1;31m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
+    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
 }
 
 warn() {
-    echo "$LOG_LEVEL" | grep -qi 'warn\|info\|debug' || return 0
+    echo "$WMRC_LOG_LEVEL" | grep -qi 'warn\|info\|debug' || return 0
     _title="$1"
     shift 1
     _message="$*"
-    >&2 printf '\033[1;37m[%s] \033[1;33m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    printf '\033[1;37m[%s] \033[1;33m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
+    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
 }
 
 info() {
-   echo "$LOG_LEVEL" | grep -qi 'info\|debug' || return 0
+   echo "$WMRC_LOG_LEVEL" | grep -qi 'info\|debug' || return 0
    _title="$1"
     shift 1
     _message="$*"
-    >&2 printf '\033[1;37m[%s] \033[1;32m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    printf '\033[1;37m[%s] \033[1;32m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
+    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
 }
 
 debug() {
-    echo "$LOG_LEVEL" | grep -qi 'debug' || return 0
+    echo "$WMRC_LOG_LEVEL" | grep -qi 'debug' || return 0
     _title="$1"
     shift 1
     _message="$*"
-    >&2 printf '\033[1;37m[%s] \033[1;34m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    printf '\033[1;37m[%s] \033[1;34m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
+    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
 }
 
 call() {

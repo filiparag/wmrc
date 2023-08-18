@@ -82,6 +82,18 @@ Note: When accessing variables inside modules, they have
 .B WMRC_
 prefix added
 
+.SS Logging
+%LOG_LEVEL = <level>
+.PP
+Logs are printed to stdout and to file
+.I /tmp/wmrc@${USER}${DISPLAY}.log
+.br
+Available levels:
+.B error, warn
+(default),
+.B info, debug
+
+
 .SS Units
 [unit_name]
 .br
