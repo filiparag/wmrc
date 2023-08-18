@@ -3,8 +3,10 @@
 WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
 LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"
 WMRC_CONFIG="$HOME/.config/wmrc"
+_pid="/tmp/wmrc::$(echo "$_module" | sed 's,/,::,g')@$(whoami)${DISPLAY}.pid"
 
 export _module
+export DAEMON_PID
 export WMRC_LOG_LEVEL
 export WMRC_CONFIG
 
@@ -93,5 +95,49 @@ restart() {
     if ! start; then
         error 'Error starting module' "$_module"
         return 1
+    fi
+}
+
+daemon_set_pid() {
+    if [ -z "$1" ]; then
+        error 'Daemon pid not provided'
+        return 1
+    fi
+    if test -f "$_pid" && ps "$(cat "$_pid")" >/dev/null 2>/dev/null; then
+        error 'Daemon is already running' "$_module"
+        return 2
+    elif ! ps "$1" >/dev/null; then
+        error 'Provided pid is of a dead process' "$1"
+        return 3
+    else
+        info 'Set daemon' "$_module => $1"
+        echo "$1" > "$_pid"
+    fi
+}
+
+daemon_get_pid() {
+    if ! test -f "$_pid" || ! ps "$(cat "$_pid")" >/dev/null 2>/dev/null; then
+        debug 'Daemon is not running' "$_module"
+        return 1
+    else
+        DAEMON_PID="$(cat "$_pid")"
+        debug 'Get daemon pid' "$DAEMON_PID"
+    fi
+}
+
+daemon_kill() {
+    if ! daemon_get_pid; then
+        error 'No daemon to kill' "$_module"
+        return 1
+    else
+        DAEMON_PID="$(cat "$_pid")"
+        info 'Kill daemon' "$_module"
+        debug 'Kill signal code' "${1:-15}"
+        if kill "-${1:-15}" "$DAEMON_PID"; then
+            debug 'Clear daemon pid' "$DAEMON_PID"
+            echo > "$_pid"
+        else
+            error 'Failed to kill daemon' "$_module"
+        fi
     fi
 }

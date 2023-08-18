@@ -18,7 +18,6 @@ module_list() {
         error "Modules directory not found: $WMRC_CONFIG/modules"
         exit 1
     fi
-    info "$WMRC_CONFIG"
     modules="$(find "$WMRC_CONFIG/modules" -type f -printf '%P\n')"
     debug 'Found modules' "$(echo "$modules" | sed -z 's/\n/, /g;s/, $/\n/')"
 }
