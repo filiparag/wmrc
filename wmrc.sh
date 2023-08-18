@@ -18,7 +18,8 @@ module_list() {
         error "Modules directory not found: $WMRC_CONFIG/modules"
         exit 1
     fi
-    modules="$(find "$WMRC_CONFIG/modules" -type f -executable -printf '%P\n' | grep 'test/')"
+    info "$WMRC_CONFIG"
+    modules="$(find "$WMRC_CONFIG/modules" -type f -printf '%P\n')"
     debug 'Found modules' "$(echo "$modules" | sed -z 's/\n/, /g;s/, $/\n/')"
 }
 
@@ -32,7 +33,8 @@ get_dependencies() {
     fi
     dependencies=""
     for m in $modules; do
-        dependencies="$dependencies${dependencies:+:}$(call "$m" 'echo $WMRC_DEPENDENCIES' | sed 's/ \{1,\}/:/g')"
+        _deps="$(sh -c ". '$WMRC_CONFIG/modules/$m' && echo \$WMRC_DEPENDENCIES" | sed 's/ \{1,\}/:/g')"
+        dependencies="$dependencies${dependencies:+:}$_deps"
     done
     debug 'Found dependencies' "$(echo "$dependencies" | sed 's|:|, |g')"
     dependencies="$(echo "$dependencies" | sed 's|:|\n|g' | sort | uniq)"
@@ -112,6 +114,7 @@ run_config_unit() {
             }
         }
     ' "$WMRC_CONFIG/rc.conf")"
+    read_config_variables
     debug 'Execute unit'
     eval "$_unit"
 }
@@ -129,9 +132,23 @@ run_method() {
         _method="$2"
         shift 2
     fi
-    _args="$*"
-    info 'Executing method' "$_callee::$_method($_args)"
-    eval "module_exec $_callee $_method $_args"
+    _params=""
+    while [ -n "$1" ]; do
+        _params="$_params${_params:+ }'$1'"
+        shift 1
+    done
+    read_config_variables
+    info 'Executing method' "$_callee::$_method($_params)"
+    eval "module_exec $_callee $_method $_params"
+}
+
+print_variable() {
+    if [ -z "$1" ]; then
+        error 'Variable name not provided'
+        exit 1
+    fi
+    read_config_variables
+    eval "echo \$WMRC_$1"
 }
 
 case "$1" in
@@ -144,6 +161,7 @@ case "$1" in
     "-h"|"--help"|"help")
         printf 'wmrc 2.0.0\nFilip Parag <filip@parag.rs>\n\nCommands:\n'
         printf '\tcall <group>/<module> <method> [args...]\n'
+        printf '\tvar <variable>\n'
         printf '\tunit <unit>\n'
         printf '\tunits\n'
         printf '\tmodules\n'
@@ -154,7 +172,16 @@ case "$1" in
         ;;
     "call")
         shift 1
-        eval "run_method $*"
+        _params=""
+        while [ -n "$1" ]; do
+            _params="$_params${_params:+ }'$( printf '%q' "$1")'"
+            shift 1
+        done
+        eval "run_method $_params"
+        ;;
+    "var")
+        shift 1
+        eval "print_variable $1"
         ;;
     "unit")
         shift 1

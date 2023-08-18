@@ -52,7 +52,12 @@ call() {
         error 'Module not found' "$_callee"
         exit 1
     fi
-    sh -c "_module='$_callee' && . '$WMRC_DIR/libwmrc.sh' && . '$WMRC_CONFIG/modules/$_callee' && $*"
+    _params=""
+    while [ -n "$1" ]; do
+        _params="$_params${_params:+ }'$1'"
+        shift 1
+    done
+    sh -c "_module='$_callee' && . '$WMRC_DIR/libwmrc.sh' && . '$WMRC_CONFIG/modules/$_callee' && $_params"
     _status="$?"
     if [ "$_status" != 0 ]; then
         error 'Error executing command'

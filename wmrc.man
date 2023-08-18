@@ -10,6 +10,9 @@
 modules | call <group>/<module> <method> [args...]
 .br
 .B wmrc
+var <variable>
+.br
+.B wmrc
 unit <unit>
 units
 .br
@@ -41,6 +44,13 @@ Modules are organized by groups, such that every module should have path like
 Call module's method with arguments
 .br
 When module name is provided only, calls init method without arguments
+
+.HP
+.B var
+<variable>
+.br
+Print value of variable in
+.I $HOME/.config/wmrc/rc.conf
 
 .HP
 .B unit
