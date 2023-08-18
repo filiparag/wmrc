@@ -1,5 +1,5 @@
 .\" Manual for wmrc.
-.TH "wmrc" 1 "18 August 2023" "wmrc 2.0.0" "wmrc manual"
+.TH "wmrc" 1 "18 August 2023" "wmrc 2.1.0" "wmrc manual"
 
 .SH NAME
 .B wmrc
@@ -46,6 +46,17 @@ Call module's method with arguments
 When module name is provided only, calls init method without arguments
 
 .HP
+.B start|stop|restart|status
+<group>/<module>
+.br
+Control module's background daemons
+
+.HP
+.B ps
+.br
+List all daemons running in the background
+
+.HP
 .B var
 <variable>
 .br
@@ -53,16 +64,16 @@ Print value of variable in
 .I $HOME/.config/wmrc/rc.conf
 
 .HP
-.B unit
-<unit>
-.br
-Sequentially runs all method calls in the unit
-
-.HP
 .B units
 .br
 List of all units in
 .I $HOME/.config/wmrc/rc.conf
+
+.HP
+.B unit
+<unit>
+.br
+Sequentially runs all method calls in the unit
 
 .HP
 .B deps

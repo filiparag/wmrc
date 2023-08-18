@@ -30,9 +30,11 @@ get_dependencies() {
         debug 'Get dependencies for' "$1"
         modules="$1"
     fi
-    dependencies=""
+    dependencies=''
     for m in $modules; do
-        _deps="$(sh -c ". '$WMRC_CONFIG/modules/$m' && echo \$WMRC_DEPENDENCIES" | sed 's/ \{1,\}/:/g')"
+        _deps="$(
+            sh -c ". '$WMRC_CONFIG/modules/$m' && echo \$WMRC_DEPENDENCIES" | sed 's/ \{1,\}/:/g'
+        )"
         dependencies="$dependencies${dependencies:+:}$_deps"
     done
     debug 'Found dependencies' "$(echo "$dependencies" | sed 's|:|, |g')"
@@ -42,7 +44,7 @@ get_dependencies() {
 check_dependencies() {
     debug 'Check dependencies'
     get_dependencies "$1" || return 1
-    _missing=""
+    _missing=''
     for d in $dependencies; do
         if ! command -v "$d" 1>/dev/null; then
             _missing="$_missing${_missing:+, }$d"
@@ -127,8 +129,7 @@ run_config_unit() {
             }
         }
     ' "$WMRC_CONFIG/rc.conf")"
-    read_config_variables
-    debug 'Execute unit'
+    info 'Executing unit' "$1"
     eval "$_unit"
 }
 
@@ -146,12 +147,11 @@ run_method() {
         _method="$2"
         shift 2
     fi
-    _params=""
+    _params=''
     while [ -n "$1" ]; do
         _params="$_params${_params:+ }'$1'"
         shift 1
     done
-    read_config_variables
     info 'Executing method' "$_callee::$_method($_params)"
     eval "module_exec $_callee $_method $_params"
 }
@@ -162,22 +162,43 @@ print_variable() {
         error 'Variable name not provided'
         exit 1
     fi
-    read_config_variables
     eval "echo \$WMRC_$1"
 }
 
+list_running_daemons() {
+    debug 'List running daemons'
+    module_list
+    _running=''
+    for m in $modules; do
+        _pid="$(
+            sh -c "_module='$m' && . '$WMRC_DIR/libwmrc.sh' && . '$WMRC_CONFIG/modules/$m' && daemon_get_pid && echo \$DAEMON_PID"
+        )"
+        if [ "$?" = 0 ]; then
+            _running="$_running${_running:+:}$_pid\t$m"
+        fi
+    done
+    if [ -n "$_running" ]; then
+        printf 'PID\tMODULE\n'
+        printf '%b\n' "$(echo "$_running" | sed 's|:|\n|g')"
+    fi
+}
+
+read_config_variables || exit 1
+
 case "$1" in
-    "")
+    '')
         error 'No command specified'
         ;;
-    "-v"|"--version"|"version")
+    '-v'|'--version'|'version')
         debug 'Print version'
-        echo 'wmrc 2.0.0'
+        echo "wmrc $WMRC_VERSION"
         ;;
-    "-h"|"--help"|"help")
+    '-h'|'--help'|'help')
         debug 'Print version'
-        printf 'wmrc 2.0.0\nFilip Parag <filip@parag.rs>\n\nCommands:\n'
+        printf 'wmrc %s\nFilip Parag <filip@parag.rs>\n\nCommands:\n' "$WMRC_VERSION"
         printf '\tcall <group>/<module> <method> [args...]\n'
+        printf '\tstart|stop|restart|status <group>/<module>\n'
+        printf '\tps\n'
         printf '\tvar <variable>\n'
         printf '\tunit <unit>\n'
         printf '\tunits\n'
@@ -187,36 +208,46 @@ case "$1" in
         printf '\thelp\n'
         printf '\tversion\n'
         ;;
-    "call")
+    'call')
         shift 1
-        _params=""
+        _params=''
         while [ -n "$1" ]; do
             _params="$_params${_params:+ }'$( printf '%q' "$1")'"
             shift 1
         done
         eval "run_method $_params"
         ;;
-    "var")
+    'var')
         shift 1
         eval "print_variable $1"
         ;;
-    "unit")
+    'unit')
         shift 1
         eval "run_config_unit $1"
         ;;
-    "units")
+    'units')
         config_unit_list
         echo "$units"
         ;;
-    "modules")
+    'modules')
         module_list
         echo "$modules"
         ;;
-    "deps")
+    'start'|'stop'|'restart'|'status')
+         if [ -z "$2" ]; then
+            error 'Module name not provided'
+            exit 1
+        fi
+        module_exec "$2" "$1"
+        ;;
+    'ps')
+        list_running_daemons
+        ;;
+    'deps')
         get_dependencies
         echo "$dependencies"
         ;;
-    "check-deps")
+    'check-deps')
         check_dependencies
         ;;
     *)

@@ -1,22 +1,30 @@
 #!/bin/sh
 
+WMRC_VERSION='2.1.0'
 WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
 LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"
 WMRC_CONFIG="$HOME/.config/wmrc"
-_pid="/tmp/wmrc::$(echo "$_module" | sed 's,/,::,g')@$(whoami)${DISPLAY}.pid"
+_pid_file="/tmp/wmrc::$(echo "$_module" | sed 's,/,::,g')@$(whoami)${DISPLAY}.pid"
 
 export _module
 export DAEMON_PID
+export WMRC_VERSION
 export WMRC_LOG_LEVEL
 export WMRC_CONFIG
+
+_stderr() {
+    >&2 printf '%s\n' "$*"
+    printf '[%s] %s\n' "$(date '+%Y-%m-%dT%H:%M:%S')" "$*" >> "$LOG_FILE"
+}
 
 error() {
     echo "$WMRC_LOG_LEVEL" | grep -qi 'error\|warn\|info\|debug' || return 0
     _title="$1"
     shift 1
     _message="$*"
-    printf '\033[1;37m[%s] \033[1;31m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
-    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
+    _stderr "$(
+        printf '\033[1;37m[%s] \033[1;31m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    )"
 }
 
 warn() {
@@ -24,8 +32,9 @@ warn() {
     _title="$1"
     shift 1
     _message="$*"
-    printf '\033[1;37m[%s] \033[1;33m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
-    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
+    _stderr "$(
+        printf '\033[1;37m[%s] \033[1;33m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    )"
 }
 
 info() {
@@ -33,8 +42,9 @@ info() {
    _title="$1"
     shift 1
     _message="$*"
-    printf '\033[1;37m[%s] \033[1;32m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
-    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
+    _stderr "$(
+        printf '\033[1;37m[%s] \033[1;32m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    )"
 }
 
 debug() {
@@ -42,8 +52,9 @@ debug() {
     _title="$1"
     shift 1
     _message="$*"
-    printf '\033[1;37m[%s] \033[1;34m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message" | \
-    xargs -0 printf '[%s] %s' "$(date '+%Y-%m-%dT%H:%M:%S')" | tee -a "$LOG_FILE"
+    _stderr "$(
+        printf '\033[1;37m[%s] \033[1;34m%s\033[0m%s %s\n' "$_module" "$_title" "${_message:+:}" "$_message"
+    )"
 }
 
 call() {
@@ -89,12 +100,20 @@ stop() {
 restart() {
     info "Restarting module $_module"
     if ! stop; then
-        error 'Error stopping module' "$_module"
+        error 'Error stopping module'
         return 1
     fi
     if ! start; then
-        error 'Error starting module' "$_module"
+        error 'Error starting module'
         return 1
+    fi
+}
+
+status() {
+    if daemon_get_pid; then
+        info "Daemon is running" "Process id $DAEMON_PID"
+    else
+        info "No daemon running"
     fi
 }
 
@@ -103,41 +122,42 @@ daemon_set_pid() {
         error 'Daemon pid not provided'
         return 1
     fi
-    if test -f "$_pid" && ps "$(cat "$_pid")" >/dev/null 2>/dev/null; then
-        error 'Daemon is already running' "$_module"
+    if test -f "$_pid_file" && ps "$(cat "$_pid_file")" >/dev/null 2>/dev/null; then
+        error 'Daemon is already running'
         return 2
-    elif ! ps "$1" >/dev/null; then
+    elif ! ps "$1" >/dev/null 2>/dev/null; then
         error 'Provided pid is of a dead process' "$1"
         return 3
     else
         info 'Set daemon' "$_module => $1"
-        echo "$1" > "$_pid"
+        echo "$1" > "$_pid_file"
     fi
 }
 
 daemon_get_pid() {
-    if ! test -f "$_pid" || ! ps "$(cat "$_pid")" >/dev/null 2>/dev/null; then
-        debug 'Daemon is not running' "$_module"
+    if ! test -f "$_pid_file" || ! ps "$(cat "$_pid_file")" >/dev/null 2>/dev/null; then
+        debug 'Daemon is not running'
         return 1
     else
-        DAEMON_PID="$(cat "$_pid")"
+        DAEMON_PID="$(cat "$_pid_file")"
         debug 'Get daemon pid' "$DAEMON_PID"
     fi
 }
 
 daemon_kill() {
     if ! daemon_get_pid; then
-        error 'No daemon to kill' "$_module"
+        error 'No daemon to kill'
         return 1
     else
-        DAEMON_PID="$(cat "$_pid")"
-        info 'Kill daemon' "$_module"
+        DAEMON_PID="$(cat "$_pid_file")"
+        info 'Kill daemon'
         debug 'Kill signal code' "${1:-15}"
         if kill "-${1:-15}" "$DAEMON_PID"; then
             debug 'Clear daemon pid' "$DAEMON_PID"
-            echo > "$_pid"
+            echo > "$_pid_file"
         else
             error 'Failed to kill daemon' "$_module"
+            return 1
         fi
     fi
 }
