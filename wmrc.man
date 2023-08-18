@@ -83,7 +83,7 @@ List of external dependencies required by all modules
 .HP
 .B check-deps
 .br
-List of missing external dependencies
+List of missing modules and external dependencies
 
 .SH CONFIGURATION
 .SS Environment variables

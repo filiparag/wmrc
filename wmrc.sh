@@ -44,10 +44,17 @@ get_dependencies() {
 check_dependencies() {
     debug 'Check dependencies'
     get_dependencies "$1" || return 1
+    module_list || return 1
     _missing=''
     for d in $dependencies; do
-        if ! command -v "$d" 1>/dev/null; then
-            _missing="$_missing${_missing:+, }$d"
+        if echo "$d" | grep -qE '\w+/\w+'; then
+            if echo "$modules" | grep -qvF "$d"; then
+                _missing="$_missing${_missing:+, }wmrc::$d"
+            fi
+        else
+            if ! command -v "$d" 1>/dev/null; then
+                _missing="$_missing${_missing:+, }$d"
+            fi
         fi
     done
     if [ -n "$_missing" ]; then
@@ -245,7 +252,7 @@ case "$1" in
         ;;
     'deps')
         get_dependencies
-        echo "$dependencies"
+        echo "$dependencies" | grep -vE '\w+/\w+'
         ;;
     'check-deps')
         check_dependencies

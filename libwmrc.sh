@@ -86,20 +86,21 @@ call() {
 }
 
 init() {
-    warn "Initialization method not defined for $_module"
+    error "Initialization method not defined"
 }
 
 start() {
-    warn "Start method not defined for $_module"
+    error "Start method not defined"
 }
 
 stop() {
-    warn "Stop method not defined for $_module"
+    warn "Using default stop method"
+    daemon_kill "$1"
 }
 
 restart() {
     info "Restarting module $_module"
-    if ! stop; then
+    if ! stop ''; then
         error 'Error stopping module'
         return 1
     fi
