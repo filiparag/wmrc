@@ -64,3 +64,23 @@ call() {
 init() {
     warn "Initialization method not defined for $_module"
 }
+
+start() {
+    warn "Start method not defined for $_module"
+}
+
+stop() {
+    warn "Stop method not defined for $_module"
+}
+
+restart() {
+    info "Restarting module $_module"
+    if ! stop; then
+        error 'Error stopping module' "$_module"
+        return 1
+    fi
+    if ! start; then
+        error 'Error starting module' "$_module"
+        return 1
+    fi
+}
