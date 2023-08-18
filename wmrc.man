@@ -1,5 +1,5 @@
 .\" Manual for wmrc.
-.TH "wmrc" 1 "12 April 2020" "wmrc 1.1" "wmrc manual"
+.TH "wmrc" 1 "18 August 2023" "wmrc 2.0.0" "wmrc manual"
 
 .SH NAME
 .B wmrc
@@ -7,108 +7,84 @@
 
 .SH SYNOPSIS
 .B wmrc
-[-l, --dry-run] [-g, --debug] <section>
+modules | call <group>/<module> <method> [args...]
 .br
 .B wmrc
--r, --run-module <module> | -v, --vars <variable>
+unit <unit>
+units
 .br
 .B wmrc
--i, --init | -d, --deps | -m, --missing-deps | -h, --help
+deps | check-deps
+.br
+.B wmrc
+help | version
 
 .SH DESCRIPTION
 .P
 wmrc is a shell utility for extending window manager \
 capabilities using modules with dependency and error checking.
 
-.SH OPTIONS
+.SH COMMANDS
 .HP
-.B -i, --init
+.B modules
 .br
-Initialize current user's wmrc configuration directory \
-using default values.
+List of all available modules in
+.I $HOME/.config/wmrc/modules
+.br
+Modules are organized by groups, such that every module should have path like
+.I $HOME/.config/wmrc/modules/<group>/<module>
 
 .HP
-.B -l, --dry-run
+.B call
+<group>/<module> [method] [args...]
 .br
-Show defined variables and section's module \
-execution order insead of running them.
+Call module's method with arguments
+.br
+When module name is provided only, calls init method without arguments
 
 .HP
-.B -g, --debug
+.B unit
+<unit>
 .br
-Debugging mode in which all modules are loaded \
-sequentualy (as if they all had async_lock \
-flag enabled). This mode is useful for debugging.
+Sequentially runs all method calls in the unit
 
 .HP
-.B -r, --run-module
+.B units
 .br
-Run specified module in wmrc environment. Syntax \
-for parameters is same as in the configuration file.
+List of all units in
+.I $HOME/.config/wmrc/rc.conf
 
 .HP
-.B -d, --deps
+.B deps
 .br
-List of all commands required by modules. \
-This will not show software package names \
-that provide respective commands in $PATH.
+List of external dependencies required by all modules
 
 .HP
-.B -m, --missiong-deps
+.B check-deps
 .br
-Similar to previous option, but for only \
-displaying missing commands.
+List of missing external dependencies
 
-.HP
-.B -v, --vars
-.br
-Get values of variables defined in the \
-configuration file.
-
-.HP
-.B -h, --help
-.br
-Show usage manual.
-
-.SH CONFIGURATION:
-.SS Environment variable:
-%variable_name = value
+.SH CONFIGURATION
+.SS Environment variables
+%VARIABLE_NAME = <expression>
 .PP
-.B Values:
-[a-zA-Z0-9_]
-.SS Section:
-[section@hostname:position]
+Note: When accessing variables inside modules, they have
+.B WMRC_
+prefix added
+
+.SS Units
+[unit_name]
 .br
-directory1/module1(parameters...),module2
+group/module
 .br
-directory2/module3,*
+group/module::method
 .br
-directory3/*
+group/module::method(arguments...)
 .PP
-.B Positions:
-before, after, replace
-.SS Parameters (Perl regex):
-[a-zA-Z0-9_-], 'String with spaces'
-.SS Comments:
-# Example comment
+Note: Arguments shall be separaated by space, like in shell scripts
 
-.SH MODULES:
-.SS Dependencies:
-Include a comment at the top of the module formatted as:
-.br
-# WMRC_DEPS: dependencies ...
-
-.SS Flags:
-Include a comment at the top of the module formatted as:
-.br
-# WMRC_FLAGS: flags ...
-
-.SS Supported flags:
-.HP
-.B async_lock
-.br
-Prevent subsequent modules  from loading until the script finishes.
-.HP
-.B required
-.br
-Prevent subsequent modules from loading if the script fails.
+.SH MODULES
+.SS Dependencies
+External dependencies are listed for every module as space separated values in
+.B WMRC_DEPENDENCIES
+global variable

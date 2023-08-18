@@ -78,7 +78,7 @@ config_unit_list() {
     fi
     units="$(awk 'match($0, /^\[(\w+)\]$/, line) {
         print line[1];
-    }' "$WMRC_CONFIG/rc_1.conf")"
+    }' "$WMRC_CONFIG/rc.conf")"
 }
 
 run_config_unit() {
@@ -91,7 +91,7 @@ run_config_unit() {
         error 'Unit name not provided'
         exit 1
     fi
-    if ! grep -q "\[$1\]" "$WMRC_CONFIG/rc_1.conf"; then
+    if ! grep -q "\[$1\]" "$WMRC_CONFIG/rc.conf"; then
         error 'Configuration unit not found' "$1"
         exit 1
     fi
@@ -111,7 +111,7 @@ run_config_unit() {
                 printf("module_exec \"%s\" \"%s\" %s\n", module, method, args);
             }
         }
-    ' "$WMRC_CONFIG/rc_1.conf")"
+    ' "$WMRC_CONFIG/rc.conf")"
     debug 'Execute unit'
     eval "$_unit"
 }
@@ -143,7 +143,7 @@ case "$1" in
         ;;
     "-h"|"--help"|"help")
         printf 'wmrc 2.0.0\nFilip Parag <filip@parag.rs>\n\nCommands:\n'
-        printf '\tcall <module> <method> [args...]\n'
+        printf '\tcall <group>/<module> <method> [args...]\n'
         printf '\tunit <unit>\n'
         printf '\tunits\n'
         printf '\tmodules\n'
