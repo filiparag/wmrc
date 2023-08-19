@@ -2,6 +2,7 @@
 
 WMRC_VERSION='2.1.0'
 WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
+WMRC_CHECK_DEPS="${WMRC_CHECK_DEPS:-true}"
 LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"
 WMRC_CONFIG="$HOME/.config/wmrc"
 _pid_file="/tmp/wmrc::$(echo "$_module" | sed 's,/,::,g')@$(whoami)${DISPLAY}.pid"
@@ -10,6 +11,7 @@ export _module
 export DAEMON_PID
 export WMRC_VERSION
 export WMRC_LOG_LEVEL
+export WMRC_CHECK_DEPS
 export WMRC_CONFIG
 
 _stderr() {
@@ -57,6 +59,29 @@ debug() {
     )"
 }
 
+_module_libraries() {
+    debug 'Module libraries' "$1"
+    if ! test -f "$WMRC_CONFIG/modules/$1"; then
+        error 'Module not found' "$WMRC_CONFIG/modules/$1"
+        exit 1
+    fi
+    libraries="$(
+        sh -c ". '$WMRC_CONFIG/modules/$1' && echo \$WMRC_LIBRARIES" | sed 's/ \{1,\}/\n/g'
+    )"
+    if [ -n "$libraries" ]; then
+        debug 'Found libraries' "$(echo "$libraries" | sed -z 's/\n/, /g;s/, $/\n/')"
+        if [ "$WMRC_CHECK_DEPS" != 'false' ]; then
+            for l in $libraries; do
+                debug 'Test library file' "$WMRC_CONFIG/libs/$l"
+                if ! test -f "$WMRC_CONFIG/libs/$l"; then
+                    error 'Library not found' "$WMRC_CONFIG/libs/$l"
+                    exit 1
+                fi
+            done
+        fi
+    fi
+}
+
 call() {
     if [ -z "$1" ]; then
         error 'Module name not provided'
@@ -75,7 +100,12 @@ call() {
         _params="$_params${_params:+ }'$1'"
         shift 1
     done
-    sh -c "_module='$_callee' && . '$WMRC_DIR/libwmrc.sh' && . '$WMRC_CONFIG/modules/$_callee' && $_params"
+    _libs=''
+    _module_libraries "$_callee"
+    if [ -n "$libraries" ]; then
+        _libs="$(echo "$libraries" | xargs printf ". '$WMRC_CONFIG/libs/%s' &&")"
+    fi
+    sh -c "_module='$_callee' && . '$WMRC_DIR/libwmrc.sh' && $_libs. '$WMRC_CONFIG/modules/$_callee' && $_params"
     _status="$?"
     if [ "$_status" != 0 ]; then
         error 'Error executing call' "$_callee::$(echo "$_params" | sed "s/^\(\w\) ?.*$/\1/;s:'::g")"

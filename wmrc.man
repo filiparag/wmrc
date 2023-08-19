@@ -46,7 +46,7 @@ Call module's method with arguments
 When module name is provided only, calls init method without arguments
 
 .HP
-.B start|stop|restart|status
+.B start | stop | restart | status
 <group>/<module>
 .br
 Control module's background daemons
@@ -93,9 +93,11 @@ When accessing variables inside modules, they have
 .B WMRC_
 prefix added
 
-.SS Logging
-%LOG_LEVEL = <level>
-.PP
+.SS Configuration variables
+.HP
+.B %LOG_LEVEL
+= <level>
+.br
 Logs are printed to stdout and to file
 .I /tmp/wmrc@${USER}${DISPLAY}.log
 .br
@@ -103,6 +105,12 @@ Available levels:
 .B error, warn
 (default),
 .B info, debug
+
+.HP
+.B %CHECK_DEPS
+= true | false (default)
+.br
+Check dependencies on every module call, with minor performance impact
 
 
 .SS Units
@@ -129,6 +137,17 @@ Wait the call to complete and abort further execution on failure
 
 .SH MODULES
 .SS Dependencies
-External dependencies are listed for every module as space separated values in
+External dependencies and called modules are listed for every module
+as space separated values in
 .B WMRC_DEPENDENCIES
 global variable
+
+.SS Libraries
+Local libraries from
+.I $HOME/.config/wmrc/libs
+are loaded into the module according to the space separated values in
+.B WMRC_LIBRARIES
+global variable
+.PP
+Libraries may also list external dependencies and called modules,
+but not other libraries

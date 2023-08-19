@@ -7,7 +7,9 @@ _module='wmrc'
 . "$WMRC_DIR/libwmrc.sh"
 
 module_exec() {
-    check_dependencies "$1"
+    if [ "$WMRC_CHECK_DEPS" != 'false' ]; then
+        check_dependencies "$1"
+    fi
     eval "call $*"
 }
 
@@ -15,50 +17,107 @@ module_list() {
     debug 'List modules'
     debug 'Test module directory' "$WMRC_CONFIG/modules"
     if ! test -d "$WMRC_CONFIG/modules"; then
-        error "Modules directory not found: $WMRC_CONFIG/modules"
+        error 'Modules directory not found' "$WMRC_CONFIG/modules"
         exit 1
     fi
     modules="$(find "$WMRC_CONFIG/modules" -type f -printf '%P\n')"
-    debug 'Found modules' "$(echo "$modules" | sed -z 's/\n/, /g;s/, $/\n/')"
+    if [ -n "$modules" ]; then
+        debug 'Found modules' "$(echo "$modules" | sed -z 's/\n/, /g;s/, $/\n/')"
+    fi
+}
+
+library_list() {
+    debug 'List libraries'
+    debug 'Test library directory' "$WMRC_CONFIG/libs"
+    if ! test -d "$WMRC_CONFIG/libs"; then
+        error 'Libraries directory not found' "$WMRC_CONFIG/libs"
+        exit 1
+    fi
+    libraries="$(find "$WMRC_CONFIG/libs" -type f -printf '%P\n')"
+    if [ -n "$libraries" ]; then
+        debug 'Found libraries' "$(echo "$libraries" | sed -z 's/\n/, /g;s/, $/\n/')"
+    fi
 }
 
 get_dependencies() {
     if [ -z "$1" ]; then
         debug 'Get all dependencies'
         module_list
+        library_list
     else
-        debug 'Get dependencies for' "$1"
+        debug 'Get dependencies' "$1"
+        _module_libraries "$1"
         modules="$1"
     fi
-    dependencies=''
-    for m in $modules; do
+    _missing=''
+    _libs=''
+    _mods=''
+    if [ -n "$libraries" ]; then
+        _libs="$(echo "$libraries" | sed 's/^/libs\//g')"
+    fi
+    if [ -n "$modules" ]; then
+        _mods="$(echo "$modules" | sed 's/^/modules\//g')"
+    fi
+    for f in $_mods $_libs; do
         _deps="$(
-            sh -c ". '$WMRC_CONFIG/modules/$m' && echo \$WMRC_DEPENDENCIES" | sed 's/ \{1,\}/:/g'
+            sh -c ". '$WMRC_CONFIG/$f' && echo \$WMRC_DEPENDENCIES" | sed 's/ \{1,\}/:/g'
         )"
-        dependencies="$dependencies${dependencies:+:}$_deps"
+        _missing="$_missing${_missing:+:}$_deps"
     done
-    debug 'Found dependencies' "$(echo "$dependencies" | sed 's|:|, |g')"
-    dependencies="$(echo "$dependencies" | sed 's|:|\n|g' | sort | uniq)"
+    debug 'Found dependencies' "$(echo "$_missing" | sed 's|:|, |g')"
+    dependencies="$(echo "$_missing" | sed 's|:|\n|g' | sort | uniq)"
+}
+
+get_libraries() {
+    if [ -z "$1" ]; then
+        debug 'Get all libraries'
+        module_list
+    else
+        debug 'Get libraries' "$1"
+        modules="$1"
+    fi
+    _libs=''
+    for m in $modules; do
+        _module_libraries "$m"
+        _libs="$_libs${_libs:+:}$libraries"
+    done
+    libraries="$(echo "$_libs" | sed 's|:|\n|g' | sort | uniq)"
 }
 
 check_dependencies() {
-    debug 'Check dependencies'
-    get_dependencies "$1" || return 1
-    module_list || return 1
-    _missing=''
+    debug 'Check dependencies' "$1"
+    _missing_libs=''
+    get_libraries "$1"
+    for l in $(echo "$_libs" | sed 's|:|\n|g' | sort | uniq); do
+        if ! test -f "$WMRC_CONFIG/libs/$l"; then
+            _missing_libs="$_missing_libs${_missing_libs:+:}$l"
+        fi
+    done
+    get_dependencies "$1"
+    module_list
+    _missing_mods=''
+    _missing_deps=''
     for d in $dependencies; do
         if echo "$d" | grep -qE '\w+/\w+'; then
-            if echo "$modules" | grep -qvF "$d"; then
-                _missing="$_missing${_missing:+, }wmrc::$d"
+            if ! echo "$modules" | grep -qF "$d"; then
+                _missing_mods="$_missing_mods${_missing_mods:+, }$d"
             fi
         else
             if ! command -v "$d" 1>/dev/null; then
-                _missing="$_missing${_missing:+, }$d"
+                _missing_deps="$_missing_deps${_missing_deps:+, }$d"
             fi
         fi
     done
-    if [ -n "$_missing" ]; then
-        error 'Missing dependencies' "$_missing"
+    if [ -n "$_missing_libs" ]; then
+        error 'Missing libraries' "$_missing_libs"
+    fi
+    if [ -n "$_missing_mods" ]; then
+        error 'Missing modules' "$_missing_mods"
+    fi
+    if [ -n "$_missing_deps" ]; then
+        error 'Missing dependencies' "$_missing_deps"
+    fi
+    if [ -n "$_missing_mods" ] || [ -n "$_missing_libs" ] || [ -n "$_missing_deps" ]; then
         exit 1
     fi
 }
@@ -81,7 +140,7 @@ read_config_variables() {
 }
 
 config_unit_list() {
-    debug 'List all units'
+    debug 'List units'
     debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
     if ! test -f "$WMRC_CONFIG/rc.conf"; then
         error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
@@ -255,6 +314,7 @@ case "$1" in
         echo "$dependencies" | grep -vE '\w+/\w+'
         ;;
     'check-deps')
+        export WMRC_CHECK_DEPS=true
         check_dependencies
         ;;
     *)
