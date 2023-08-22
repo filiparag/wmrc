@@ -1,5 +1,5 @@
 .\" Manual for wmrc.
-.TH "wmrc" 1 "18 August 2023" "wmrc 2.1.0" "wmrc manual"
+.TH "wmrc" 1 "18 August 2023" "wmrc 2.1.1" "wmrc manual"
 
 .SH NAME
 .B wmrc
@@ -73,7 +73,7 @@ List of all units in
 .B unit
 <unit>
 .br
-Sequentially runs all method calls in the unit
+Run all method calls in the unit
 
 .HP
 .B deps
