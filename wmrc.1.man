@@ -24,8 +24,8 @@ help | version
 
 .SH DESCRIPTION
 .P
-wmrc is a shell utility for extending window manager \
-capabilities using modules with dependency and error checking.
+wmrc is a shell script framework for extending window manager capabilities
+using modules with dependency and error checking
 
 .SH COMMANDS
 .HP

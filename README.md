@@ -5,11 +5,15 @@ By using wmrc, you can declutter your *.profile* and window manager's configurat
 
 ## Installation
 
+### Arch Linux ([AUR](https://aur.archlinux.org/packages/wmrc))
+```shell
+paru -S aur/wmrc
+```
+
 ### Generic instructions
 ```shell
-git clone 'https://github.com/filiparag/wmrc' && cd ./wmrc
-sudo install -Dm 775 ./wmrc.sh /usr/bin/wmrc
-sudo install -Dm 664 ./libwmrc.sh /usr/share/wmrc/libwmrc.sh
-sudo install -Dm 664 wmrc.man /usr/share/man/man1/wmrc
-sudo sed -i 's/^WMRC_DIR=.*$/WMRC_DIR=\/usr\/share\/wmrc/' /usr/bin/wmrc
+git clone 'https://github.com/filiparag/wmrc'
+cd ./wmrc
+sudo make install
+```
 ```
