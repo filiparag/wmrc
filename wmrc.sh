@@ -6,6 +6,14 @@ export WMRC_DIR
 _module='wmrc'
 . "$WMRC_DIR/libwmrc.sh"
 
+test_config_file() {
+    debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
+    if ! test -f "$WMRC_CONFIG/rc.conf"; then
+        error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
+        exit 1
+    fi
+}
+
 module_exec() {
     if [ "$WMRC_CHECK_DEPS" != 'false' ]; then
         check_dependencies "$1"
@@ -124,11 +132,7 @@ check_dependencies() {
 
 read_config_variables() {
     debug 'Read configuration variables'
-    debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
-    if ! test -f "$WMRC_CONFIG/rc.conf"; then
-        error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
-        exit 1
-    fi
+    test_config_file
     _vars="$(
         awk 'match($0, /^%(\w+) *= *(.*)$/, line) {
             printf("export WMRC_%s=\"%s\"\n",line[1],line[2]);
@@ -141,11 +145,7 @@ read_config_variables() {
 
 config_unit_list() {
     debug 'List units'
-    debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
-    if ! test -f "$WMRC_CONFIG/rc.conf"; then
-        error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
-        exit 1
-    fi
+    test_config_file
     units="$(awk 'match($0, /^\[(\w+)\]$/, line) {
         print line[1];
     }' "$WMRC_CONFIG/rc.conf")"
@@ -153,11 +153,7 @@ config_unit_list() {
 
 run_config_unit() {
     debug 'Run configuration unit'
-    debug 'Test configuration file' "$WMRC_CONFIG/rc.conf"
-    if ! test -f "$WMRC_CONFIG/rc.conf"; then
-        error 'Configuration file not found' "$WMRC_CONFIG/rc.conf"
-        exit 1
-    fi
+    test_config_file
     if [ -z "$1" ]; then
         error 'Unit name not provided'
         exit 1
@@ -169,13 +165,13 @@ run_config_unit() {
     _unit="$(
         awk -v target="$1" \
         'match($0, /^\[(.+)\]$/, line) {
-            section=line[1];
+            unit=line[1];
         }
         match($0, /^%.*$/) {
-            section="";
+            unit="";
         }
         match($0, /^(\w+\/\w+)(::)?(\w+)?(\((.+)\))? *(\w+)?/, line) {
-            if (section == target) {
+            if (unit == target) {
                 module=line[1];
                 method=line[3] ? line[3] : "init";
                 args=line[5];
@@ -190,13 +186,14 @@ run_config_unit() {
                 } else {
                     printf("info \"Executing critical call\" \"%s\"\n", call);
                     printf("module_exec \"%s\" \"%s\" %s || \\\n", module, method, args);
-                    printf("{\n\terror \"Critical task failed, aborting\"\n\texit 1\n}\n");
+                    printf("{\n\terror \"Critical task failed, aborting\"\n\twait; exit 1\n}\n");
                 }
             }
         }
     ' "$WMRC_CONFIG/rc.conf")"
     info 'Executing unit' "$1"
     eval "$_unit"
+    wait
 }
 
 run_method() {

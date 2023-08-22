@@ -1,6 +1,6 @@
 #!/bin/sh
 
-WMRC_VERSION='2.1.0'
+WMRC_VERSION='2.1.1'
 WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
 WMRC_CHECK_DEPS="${WMRC_CHECK_DEPS:-true}"
 LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"
@@ -117,14 +117,15 @@ call() {
 
 init() {
     error "Initialization method not defined"
+    return 1
 }
 
 start() {
     error "Start method not defined"
+    return 1
 }
 
 stop() {
-    warn "Using default stop method"
     daemon_kill "$1"
 }
 
@@ -132,7 +133,6 @@ restart() {
     info "Restarting module $_module"
     if ! stop ''; then
         error 'Error stopping module'
-        return 1
     fi
     if ! start; then
         error 'Error starting module'
@@ -166,7 +166,7 @@ daemon_set_pid() {
 }
 
 daemon_get_pid() {
-    if ! test -f "$_pid_file" || ! ps "$(cat "$_pid_file")" >/dev/null 2>/dev/null; then
+    if ! test -f "$_pid_file" || ! kill -0 "$(cat "$_pid_file")" >/dev/null 2>/dev/null; then
         debug 'Daemon is not running'
         return 1
     else
@@ -181,7 +181,7 @@ daemon_kill() {
         return 1
     else
         DAEMON_PID="$(cat "$_pid_file")"
-        info 'Kill daemon'
+        info 'Kill daemon' "$DAEMON_PID"
         debug 'Kill signal code' "${1:-15}"
         if kill "-${1:-15}" "$DAEMON_PID"; then
             debug 'Clear daemon pid' "$DAEMON_PID"
