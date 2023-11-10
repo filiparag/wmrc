@@ -37,6 +37,7 @@ function __fish_complete_wmrc
     complete -c wmrc -n __fish_wmrc_root_command -a stop -x -d 'Stop module\'s background daemon'
     complete -c wmrc -n __fish_wmrc_root_command -a restart -x -d 'Restart module\'s background daemon'
     complete -c wmrc -n __fish_wmrc_root_command -a status -x -d 'Get module\'s background daemon status'
+    complete -c wmrc -n __fish_wmrc_root_command -a logs -x -d 'Print the log of the current session'
     for cmd in call start
         complete -c wmrc -f -n "__fish_wmrc_using_command $cmd" -a "$__modules"
     end
@@ -44,6 +45,7 @@ function __fish_complete_wmrc
         complete -c wmrc -f -n "__fish_wmrc_using_command $cmd" -a "$__running"
     end
     complete -c wmrc -f -n '__fish_wmrc_using_command unit' -a "$__units"
+    complete -c wmrc -f -n '__fish_wmrc_using_command logs' -s f -l follow -d 'Attach to the log of the current session'
 end
 
 __fish_complete_wmrc

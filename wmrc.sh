@@ -314,8 +314,20 @@ case "$1" in
         export WMRC_CHECK_DEPS=true
         check_dependencies
         ;;
+    'logs')
+        case "$2" in
+            '')
+                cat "$LOG_FILE";;
+            '-f'|'--follow')
+                tail -n 0 -f "$LOG_FILE";;
+            '-'*)
+                error 'Unknown option' "$2";;
+            *)
+                echo a
+        esac
+        ;;
     *)
-        error 'Unknown command'
+        error 'Unknown command' "$1"
         ;;
 esac
 

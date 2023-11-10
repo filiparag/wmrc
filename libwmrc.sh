@@ -1,6 +1,6 @@
 #!/bin/sh
 
-WMRC_VERSION='2.1.1'
+WMRC_VERSION='2.1.2'
 WMRC_LOG_LEVEL="${WMRC_LOG_LEVEL:-warn}"
 WMRC_CHECK_DEPS="${WMRC_CHECK_DEPS:-true}"
 LOG_FILE="/tmp/wmrc@$(whoami)${DISPLAY}.log"

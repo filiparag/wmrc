@@ -1,5 +1,5 @@
 .\" Manual for wmrc.
-.TH "wmrc" 1 "18 August 2023" "wmrc 2.1.1" "wmrc manual"
+.TH "wmrc" 1 "11 November 2023" "wmrc 2.1.2" "wmrc manual"
 
 .SH NAME
 .B wmrc
@@ -84,6 +84,12 @@ List of external dependencies required by all modules
 .B check-deps
 .br
 List of missing modules and external dependencies
+
+.HP
+.B logs
+[-f|--follow]
+.br
+Print or attach to the log of the current session
 
 .SH CONFIGURATION
 .SS Environment variables
